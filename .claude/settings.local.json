@@ -13,7 +13,12 @@
       "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")",
       "Bash(npx shadcn@latest init --yes)",
       "Bash(rm -f components.json)",
-      "Bash(npx shadcn@latest init --defaults)"
+      "Bash(npx shadcn@latest init --defaults)",
+      "Bash(npx tsc:*)",
+      "Bash(gh auth:*)",
+      "Bash(where gh:*)",
+      "Bash(export PATH=\"/c/Program Files/nodejs:/c/Program Files/GitHub CLI:$PATH\")",
+      "Bash(gh repo:*)"
     ]
   }
 }
