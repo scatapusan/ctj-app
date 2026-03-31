@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Loader2, Camera, X, UserPlus } from "lucide-react"
+import { Loader2, Camera, X, UserPlus, Lock } from "lucide-react"
 
 interface RegistrationFormProps {
   email: string
@@ -48,6 +48,9 @@ export function RegistrationForm({
   const [completedFreshStart, setCompletedFreshStart] = useState(false)
   const [completedFreedomDay, setCompletedFreedomDay] = useState(false)
   const [completedGrandDay, setCompletedGrandDay] = useState(false)
+
+  // PIN (optional, defaults to 1234)
+  const [pin, setPin] = useState("")
 
   // Photo
   const [photoFile, setPhotoFile] = useState<File | null>(null)
@@ -145,6 +148,7 @@ export function RegistrationForm({
           completed_fresh_start: completedFreshStart,
           completed_freedom_day: completedFreedomDay,
           completed_grand_day: completedGrandDay,
+          ...(pin.length === 4 ? { pin } : {}),
         })
         .select("id")
         .single()
@@ -473,6 +477,32 @@ export function RegistrationForm({
             label="Grand Day"
             checked={completedGrandDay}
             onCheckedChange={setCompletedGrandDay}
+          />
+        </div>
+      </section>
+
+      <Separator className="bg-white/[0.06]" />
+
+      {/* PIN Setup */}
+      <section className="space-y-4">
+        <SectionHeader>Security PIN</SectionHeader>
+        <p className="text-xs text-muted-foreground">
+          Set a 4-digit PIN to protect your profile. Leave blank to use the default (1234).
+        </p>
+        <div className="space-y-1.5">
+          <Label htmlFor="pin" className="text-muted-foreground">
+            <Lock className="size-3.5 inline mr-1" />
+            4-Digit PIN
+          </Label>
+          <Input
+            id="pin"
+            type="text"
+            inputMode="numeric"
+            maxLength={4}
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+            placeholder="1234 (default)"
+            className="h-12 text-base tracking-widest text-center max-w-[200px]"
           />
         </div>
       </section>

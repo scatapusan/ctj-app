@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { createBrowserClient } from "@/lib/supabase"
+import { createBrowserClient, MEMBER_COLUMNS } from "@/lib/supabase"
 import { differenceInYears, parse } from "date-fns"
 import type { Member } from "@/lib/types"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Loader2, Camera, X, Save } from "lucide-react"
+import { Loader2, Camera, X, Save, Lock } from "lucide-react"
 
 interface EditProfileProps {
   member: Member
@@ -48,6 +48,15 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(member.photo_url)
   const [photoChanged, setPhotoChanged] = useState(false)
+
+  // PIN change (optional)
+  const [showPinChange, setShowPinChange] = useState(false)
+  const [currentPin, setCurrentPin] = useState("")
+  const [newPin, setNewPin] = useState("")
+  const [confirmPin, setConfirmPin] = useState("")
+  const [pinError, setPinError] = useState<string | null>(null)
+  const [pinSuccess, setPinSuccess] = useState(false)
+  const [pinLoading, setPinLoading] = useState(false)
 
   // Form state
   const [loading, setLoading] = useState(false)
@@ -88,6 +97,70 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
     if (!lastName.trim()) errors.lastName = "Last name is required"
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
+  }
+
+  async function handleChangePin() {
+    setPinError(null)
+    setPinSuccess(false)
+
+    if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+      setPinError("PIN must be exactly 4 digits.")
+      return
+    }
+    if (newPin !== confirmPin) {
+      setPinError("New PINs don't match.")
+      return
+    }
+    if (!currentPin) {
+      setPinError("Enter your current PIN.")
+      return
+    }
+
+    setPinLoading(true)
+
+    try {
+      const supabase = createBrowserClient()
+
+      // Verify current PIN first
+      const { data: valid, error: rpcError } = await supabase.rpc("verify_pin", {
+        p_member_id: member.id,
+        p_pin: currentPin,
+      })
+
+      if (rpcError) {
+        setPinError("Something went wrong. Please try again.")
+        setPinLoading(false)
+        return
+      }
+
+      if (!valid) {
+        setPinError("Current PIN is incorrect.")
+        setPinLoading(false)
+        return
+      }
+
+      // Update the PIN
+      const { error: updateError } = await supabase
+        .from("members")
+        .update({ pin: newPin })
+        .eq("id", member.id)
+
+      if (updateError) {
+        setPinError("Failed to update PIN. Please try again.")
+        setPinLoading(false)
+        return
+      }
+
+      setPinSuccess(true)
+      setCurrentPin("")
+      setNewPin("")
+      setConfirmPin("")
+      setTimeout(() => setShowPinChange(false), 1500)
+    } catch {
+      setPinError("Network error. Please check your connection.")
+    } finally {
+      setPinLoading(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -151,7 +224,7 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
         .from("members")
         .update(updateData)
         .eq("id", member.id)
-        .select("*")
+        .select(MEMBER_COLUMNS)
         .single()
 
       if (updateError) {
@@ -450,6 +523,110 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
           <ToggleRow label="Freedom Day" checked={completedFreedomDay} onCheckedChange={setCompletedFreedomDay} />
           <ToggleRow label="Grand Day" checked={completedGrandDay} onCheckedChange={setCompletedGrandDay} />
         </div>
+      </section>
+
+      <Separator className="bg-white/[0.06]" />
+
+      {/* Change PIN */}
+      <section className="space-y-4">
+        <SectionHeader>Security</SectionHeader>
+
+        {!showPinChange ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-sm"
+            onClick={() => setShowPinChange(true)}
+          >
+            <Lock className="size-3.5 mr-1.5" />
+            Change My PIN
+          </Button>
+        ) : (
+          <div className="space-y-3 rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="current-pin" className="text-muted-foreground">Current PIN</Label>
+              <Input
+                id="current-pin"
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                value={currentPin}
+                onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="Enter current 4-digit PIN"
+                className="h-12 text-base tracking-widest text-center"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="new-pin" className="text-muted-foreground">New PIN</Label>
+                <Input
+                  id="new-pin"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="####"
+                  className="h-12 text-base tracking-widest text-center"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirm-pin" className="text-muted-foreground">Confirm</Label>
+                <Input
+                  id="confirm-pin"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="####"
+                  className="h-12 text-base tracking-widest text-center"
+                />
+              </div>
+            </div>
+
+            {pinError && (
+              <p className="text-sm text-red-400">{pinError}</p>
+            )}
+            {pinSuccess && (
+              <p className="text-sm text-emerald-400">PIN updated successfully!</p>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="gradient"
+                size="sm"
+                onClick={handleChangePin}
+                disabled={pinLoading}
+                className="flex-1"
+              >
+                {pinLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  "Update PIN"
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowPinChange(false)
+                  setPinError(null)
+                  setPinSuccess(false)
+                  setCurrentPin("")
+                  setNewPin("")
+                  setConfirmPin("")
+                }}
+                disabled={pinLoading}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </section>
 
       {error && (

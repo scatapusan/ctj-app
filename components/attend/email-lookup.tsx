@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createBrowserClient } from "@/lib/supabase"
+import { createBrowserClient, MEMBER_COLUMNS } from "@/lib/supabase"
 import type { Member } from "@/lib/types"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,7 +42,7 @@ export function EmailLookup({
 
       const { data: member, error: memberError } = await supabase
         .from("members")
-        .select("*")
+        .select(MEMBER_COLUMNS)
         .eq("email", trimmed)
         .maybeSingle()
 

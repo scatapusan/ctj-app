@@ -7,6 +7,7 @@ import { EventSelector } from "@/components/attend/event-selector"
 import { EmailLookup } from "@/components/attend/email-lookup"
 import { WelcomeBack } from "@/components/attend/welcome-back"
 import { RegistrationForm } from "@/components/attend/registration-form"
+import { PinEntry } from "@/components/attend/pin-entry"
 import { EditProfile } from "@/components/attend/edit-profile"
 import { SuccessScreen } from "@/components/attend/success-screen"
 import { ArrowLeft, CheckCircle2, Sparkles, Pencil } from "lucide-react"
@@ -18,6 +19,7 @@ type FlowStep =
   | "email-input"
   | "welcome-back"
   | "registration"
+  | "pin-entry"
   | "edit-profile"
   | "success"
   | "already-checked-in"
@@ -68,7 +70,15 @@ function AttendPageContent() {
 
   function handleEditProfile(fromStep: FlowStep) {
     setReturnToStep(fromStep)
+    setStep("pin-entry")
+  }
+
+  function handlePinVerified() {
     setStep("edit-profile")
+  }
+
+  function handlePinCancel() {
+    setStep(returnToStep)
   }
 
   function handleProfileSaved(updatedMember: Member) {
@@ -93,6 +103,8 @@ function AttendPageContent() {
       setStep("select-event")
     } else if (step === "welcome-back" || step === "registration") {
       setStep("email-input")
+    } else if (step === "pin-entry") {
+      setStep(returnToStep)
     } else if (step === "edit-profile") {
       setStep(returnToStep)
     }
@@ -102,6 +114,7 @@ function AttendPageContent() {
     (step === "email-input" && !eventParam) ||
     step === "welcome-back" ||
     step === "registration" ||
+    step === "pin-entry" ||
     step === "edit-profile"
 
   return (
@@ -169,6 +182,14 @@ function AttendPageContent() {
               email={email}
               eventId={eventId}
               onSuccess={handleRegistrationSuccess}
+            />
+          )}
+
+          {step === "pin-entry" && member && (
+            <PinEntry
+              memberId={member.id}
+              onVerified={handlePinVerified}
+              onCancel={handlePinCancel}
             />
           )}
 
