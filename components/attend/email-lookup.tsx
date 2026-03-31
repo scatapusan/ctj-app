@@ -12,7 +12,7 @@ interface EmailLookupProps {
   eventId: string
   onMemberFound: (member: Member) => void
   onNewMember: (email: string) => void
-  onAlreadyCheckedIn: (memberName: string) => void
+  onAlreadyCheckedIn: (member: Member) => void
 }
 
 export function EmailLookup({
@@ -66,7 +66,7 @@ export function EmailLookup({
         .maybeSingle()
 
       if (existingAttendance) {
-        onAlreadyCheckedIn(member.first_name)
+        onAlreadyCheckedIn(member as Member)
         return
       }
 

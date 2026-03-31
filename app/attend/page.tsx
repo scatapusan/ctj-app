@@ -9,7 +9,8 @@ import { WelcomeBack } from "@/components/attend/welcome-back"
 import { RegistrationForm } from "@/components/attend/registration-form"
 import { EditProfile } from "@/components/attend/edit-profile"
 import { SuccessScreen } from "@/components/attend/success-screen"
-import { ArrowLeft, CheckCircle2, Sparkles } from "lucide-react"
+import { ArrowLeft, CheckCircle2, Sparkles, Pencil } from "lucide-react"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
 type FlowStep =
@@ -50,8 +51,9 @@ function AttendPageContent() {
     setStep("registration")
   }
 
-  function handleAlreadyCheckedIn(name: string) {
-    setFirstName(name)
+  function handleAlreadyCheckedIn(m: Member) {
+    setMember(m)
+    setFirstName(m.first_name)
     setStep("already-checked-in")
   }
 
@@ -186,10 +188,20 @@ function AttendPageContent() {
             />
           )}
 
-          {step === "already-checked-in" && (
+          {step === "already-checked-in" && member && (
             <div className="flex flex-col items-center text-center space-y-4 py-6">
-              <div className="rounded-full bg-cyan-500/10 p-4 ring-1 ring-cyan-500/20">
-                <CheckCircle2 className="size-12 text-cyan-400" strokeWidth={1.5} />
+              <div className="relative">
+                <Avatar className="h-20 w-20 ring-2 ring-cyan-500/30 shadow-glow-cyan">
+                  {member.photo_url ? (
+                    <AvatarImage src={member.photo_url} alt={member.first_name} />
+                  ) : null}
+                  <AvatarFallback className="text-xl font-semibold bg-cyan-500/10 text-cyan-400">
+                    {(member.first_name?.[0] || "").toUpperCase()}{(member.last_name?.[0] || "").toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -bottom-1 -right-1 rounded-full bg-cyan-500 p-1.5 ring-2 ring-background">
+                  <CheckCircle2 className="size-3.5 text-white" />
+                </div>
               </div>
               <div className="space-y-1">
                 <h2 className="text-xl font-semibold">Already checked in!</h2>
@@ -197,14 +209,25 @@ function AttendPageContent() {
                   <span className="font-medium text-emerald-400">{firstName}</span> is already marked present for this event.
                 </p>
               </div>
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full min-h-[44px] text-base mt-2"
-                onClick={handleReset}
-              >
-                Check in another person
-              </Button>
+              <div className="w-full space-y-3 mt-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full min-h-[44px] text-base"
+                  onClick={() => handleEditProfile("already-checked-in")}
+                >
+                  <Pencil className="size-4 mr-2" />
+                  Update My Profile
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  className="w-full min-h-[44px] text-base text-muted-foreground"
+                  onClick={handleReset}
+                >
+                  Check in another person
+                </Button>
+              </div>
             </div>
           )}
         </div>
