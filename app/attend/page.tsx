@@ -10,6 +10,7 @@ import { RegistrationForm } from "@/components/attend/registration-form"
 import { PinEntry } from "@/components/attend/pin-entry"
 import { EditProfile } from "@/components/attend/edit-profile"
 import { SuccessScreen } from "@/components/attend/success-screen"
+import { ProfileEmailLookup } from "@/components/attend/profile-email-lookup"
 import { ArrowLeft, CheckCircle2, Sparkles, Pencil } from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -17,12 +18,14 @@ import { Button } from "@/components/ui/button"
 type FlowStep =
   | "select-event"
   | "email-input"
+  | "profile-email"
   | "welcome-back"
   | "registration"
   | "pin-entry"
   | "edit-profile"
   | "success"
   | "already-checked-in"
+  | "profile-saved"
 
 function AttendPageContent() {
   const searchParams = useSearchParams()
@@ -51,6 +54,17 @@ function AttendPageContent() {
   function handleNewMember(newEmail: string) {
     setEmail(newEmail)
     setStep("registration")
+  }
+
+  function handleProfileLookup() {
+    setStep("profile-email")
+  }
+
+  function handleProfileMemberFound(m: Member) {
+    setMember(m)
+    setFirstName(m.first_name)
+    setReturnToStep("profile-saved")
+    setStep("pin-entry")
   }
 
   function handleAlreadyCheckedIn(m: Member) {
@@ -84,7 +98,11 @@ function AttendPageContent() {
   function handleProfileSaved(updatedMember: Member) {
     setMember(updatedMember)
     setFirstName(updatedMember.first_name)
-    setStep(returnToStep)
+    if (returnToStep === "profile-saved") {
+      setStep("profile-saved")
+    } else {
+      setStep(returnToStep)
+    }
   }
 
   function handleEditCancel() {
@@ -101,17 +119,31 @@ function AttendPageContent() {
   function handleBack() {
     if (step === "email-input" && !eventParam) {
       setStep("select-event")
+    } else if (step === "profile-email") {
+      setStep("select-event")
     } else if (step === "welcome-back" || step === "registration") {
       setStep("email-input")
     } else if (step === "pin-entry") {
-      setStep(returnToStep)
+      if (returnToStep === "profile-saved") {
+        setStep("profile-email")
+      } else {
+        setStep(returnToStep)
+      }
     } else if (step === "edit-profile") {
-      setStep(returnToStep)
+      setStep(returnToStep === "profile-saved" ? "profile-email" : returnToStep)
     }
+  }
+
+  function handleProfileReset() {
+    setMember(null)
+    setEmail("")
+    setFirstName("")
+    setStep("select-event")
   }
 
   const showBack =
     (step === "email-input" && !eventParam) ||
+    step === "profile-email" ||
     step === "welcome-back" ||
     step === "registration" ||
     step === "pin-entry" ||
@@ -156,7 +188,30 @@ function AttendPageContent() {
         {/* Flow content — glass card */}
         <div className="glass rounded-2xl p-6">
           {step === "select-event" && (
-            <EventSelector onSelect={handleEventSelect} />
+            <div className="space-y-6">
+              <EventSelector onSelect={handleEventSelect} />
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/[0.06]" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-card px-3 text-muted-foreground/60">or</span>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="lg"
+                className="w-full min-h-[44px] text-base text-muted-foreground hover:text-emerald-400"
+                onClick={handleProfileLookup}
+              >
+                <Pencil className="size-4 mr-2" />
+                Just Update My Profile
+              </Button>
+            </div>
+          )}
+
+          {step === "profile-email" && (
+            <ProfileEmailLookup onMemberFound={handleProfileMemberFound} />
           )}
 
           {step === "email-input" && (
@@ -207,6 +262,29 @@ function AttendPageContent() {
               onReset={handleReset}
               onEditProfile={member ? () => handleEditProfile("success") : undefined}
             />
+          )}
+
+          {step === "profile-saved" && (
+            <div className="flex flex-col items-center justify-center text-center space-y-6 py-8 relative">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full bg-emerald-500/10 blur-[60px] animate-pulse-glow" />
+              <div className="relative animate-check-scale">
+                <CheckCircle2 className="size-20 text-emerald-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.4)]" strokeWidth={1.5} />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold gradient-text">Profile Updated!</h2>
+                <p className="text-lg text-muted-foreground">
+                  Looking good, <span className="font-semibold text-emerald-400">{firstName}</span>!
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="lg"
+                className="w-full min-h-[44px] text-base text-muted-foreground"
+                onClick={handleProfileReset}
+              >
+                Back to Home
+              </Button>
+            </div>
           )}
 
           {step === "already-checked-in" && member && (

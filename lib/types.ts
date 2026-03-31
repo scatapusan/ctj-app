@@ -30,6 +30,7 @@ export interface Member {
   completed_fresh_start: boolean
   completed_freedom_day: boolean
   completed_grand_day: boolean
+  is_admin: boolean
   created_at: string
   updated_at: string
 }
