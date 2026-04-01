@@ -98,7 +98,7 @@ export default function AdminDashboard() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold gradient-text">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Overview of CTJ Marikina Youth & YA</p>
+        <p className="text-sm text-muted-foreground mt-1">Overview of CTJCC Marikina Youth & YA</p>
       </div>
 
       {/* Stats grid */}

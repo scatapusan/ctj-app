@@ -78,7 +78,7 @@ function LoginForm() {
               <ShieldCheck className="size-8 text-emerald-400" />
             </div>
             <h1 className="text-xl font-bold gradient-text">Admin Login</h1>
-            <p className="text-sm text-muted-foreground">CTJ Marikina Dashboard</p>
+            <p className="text-sm text-muted-foreground">CTJCC Marikina Dashboard</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">

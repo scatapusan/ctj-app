@@ -29,6 +29,16 @@ export function RegistrationForm({
   const [middleName, setMiddleName] = useState("")
   const [lastName, setLastName] = useState("")
 
+  // New church-compatible fields (youth-appropriate)
+  const [nickname, setNickname] = useState("")
+  const [gender, setGender] = useState("")
+  const [fatherName, setFatherName] = useState("")
+  const [motherName, setMotherName] = useState("")
+  const [emergencyContactName, setEmergencyContactName] = useState("")
+  const [emergencyContactNumber, setEmergencyContactNumber] = useState("")
+  const [occupation, setOccupation] = useState("")
+  const [baptizedInWater, setBaptizedInWater] = useState(false)
+
   // Optional
   const [birthdate, setBirthdate] = useState("")
   const [contactNumber, setContactNumber] = useState("")
@@ -148,6 +158,14 @@ export function RegistrationForm({
           completed_fresh_start: completedFreshStart,
           completed_freedom_day: completedFreedomDay,
           completed_grand_day: completedGrandDay,
+          nickname: nickname.trim() || null,
+          gender: gender || null,
+          father_name: fatherName.trim() || null,
+          mother_name: motherName.trim() || null,
+          emergency_contact_name: emergencyContactName.trim() || null,
+          emergency_contact_number: emergencyContactNumber.trim() || null,
+          occupation: occupation.trim() || null,
+          baptized_in_water: baptizedInWater,
           ...(pin.length === 4 ? { pin } : {}),
         })
         .select("id")
@@ -231,15 +249,53 @@ export function RegistrationForm({
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="middle-name" className="text-muted-foreground">Middle Name</Label>
-          <Input
-            id="middle-name"
-            value={middleName}
-            onChange={(e) => setMiddleName(e.target.value)}
-            placeholder="Santos"
-            className="h-12 text-base"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="middle-name" className="text-muted-foreground">Middle Name</Label>
+            <Input
+              id="middle-name"
+              value={middleName}
+              onChange={(e) => setMiddleName(e.target.value)}
+              placeholder="Santos"
+              className="h-12 text-base"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="nickname" className="text-muted-foreground">Nickname</Label>
+            <Input
+              id="nickname"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="What people call you"
+              className="h-12 text-base"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="gender" className="text-muted-foreground">Gender</Label>
+            <select
+              id="gender"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className="flex w-full h-12 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-base text-foreground ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/50"
+            >
+              <option value="" className="bg-card">Select</option>
+              <option value="Male" className="bg-card">Male</option>
+              <option value="Female" className="bg-card">Female</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="occupation" className="text-muted-foreground">Occupation</Label>
+            <Input
+              id="occupation"
+              value={occupation}
+              onChange={(e) => setOccupation(e.target.value)}
+              placeholder="Student, etc."
+              className="h-12 text-base"
+            />
+          </div>
         </div>
 
         <div className="space-y-1.5">
@@ -297,6 +353,67 @@ export function RegistrationForm({
             placeholder="Street, Barangay, City"
             className="h-12 text-base"
           />
+        </div>
+      </section>
+
+      <Separator className="bg-white/[0.06]" />
+
+      {/* Family */}
+      <section className="space-y-4">
+        <SectionHeader>Family</SectionHeader>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="father-name" className="text-muted-foreground">Father&apos;s Name</Label>
+            <Input
+              id="father-name"
+              value={fatherName}
+              onChange={(e) => setFatherName(e.target.value)}
+              placeholder="Full name"
+              className="h-12 text-base"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="mother-name" className="text-muted-foreground">Mother&apos;s Name</Label>
+            <Input
+              id="mother-name"
+              value={motherName}
+              onChange={(e) => setMotherName(e.target.value)}
+              placeholder="Full name"
+              className="h-12 text-base"
+            />
+          </div>
+        </div>
+      </section>
+
+      <Separator className="bg-white/[0.06]" />
+
+      {/* Emergency Contact */}
+      <section className="space-y-4">
+        <SectionHeader>Emergency Contact</SectionHeader>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="ec-name" className="text-muted-foreground">Contact Person</Label>
+            <Input
+              id="ec-name"
+              value={emergencyContactName}
+              onChange={(e) => setEmergencyContactName(e.target.value)}
+              placeholder="Name"
+              className="h-12 text-base"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ec-number" className="text-muted-foreground">Contact Number</Label>
+            <Input
+              id="ec-number"
+              type="tel"
+              value={emergencyContactNumber}
+              onChange={(e) => setEmergencyContactNumber(e.target.value)}
+              placeholder="09XX XXX XXXX"
+              className="h-12 text-base"
+            />
+          </div>
         </div>
       </section>
 
@@ -477,6 +594,14 @@ export function RegistrationForm({
             label="Grand Day"
             checked={completedGrandDay}
             onCheckedChange={setCompletedGrandDay}
+          />
+
+          <div className="h-px bg-white/[0.06]" />
+
+          <ToggleRow
+            label="Baptized in Water"
+            checked={baptizedInWater}
+            onCheckedChange={setBaptizedInWater}
           />
         </div>
       </section>

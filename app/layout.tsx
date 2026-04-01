@@ -14,8 +14,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "CTJ Marikina",
-  description: "Church youth & young adult attendance app",
+  title: "CTJCC Marikina",
+  description: "Come To Jesus Community Church of Marikina — Youth & YA Attendance",
 };
 
 export default function RootLayout({

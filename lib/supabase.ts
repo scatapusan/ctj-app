@@ -4,7 +4,7 @@ import {
 } from '@supabase/ssr'
 
 /** All member columns EXCEPT `pin` — use this instead of select("*") */
-export const MEMBER_COLUMNS = "id,email,first_name,last_name,middle_name,contact_number,facebook_link,address,birthdate,photo_url,discipler_name,disciples,prospect_disciples,lifeline_leader,lifeline_co_leaders,lifeline_members,ministry_involvements,is_youth_ya_core,completed_reach,completed_fresh_start,completed_freedom_day,completed_grand_day,is_admin,created_at,updated_at"
+export const MEMBER_COLUMNS = "id,email,first_name,last_name,middle_name,contact_number,facebook_link,address,birthdate,photo_url,discipler_name,disciples,prospect_disciples,lifeline_leader,lifeline_co_leaders,lifeline_members,ministry_involvements,is_youth_ya_core,completed_reach,completed_fresh_start,completed_freedom_day,completed_grand_day,is_admin,nickname,gender,marital_status,spouse_name,children_names,father_name,mother_name,emergency_contact_name,emergency_contact_number,occupation,date_joined_ctjcc,spiritual_birthday,baptized_in_water,created_at,updated_at"
 import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 
 export function createBrowserClient() {

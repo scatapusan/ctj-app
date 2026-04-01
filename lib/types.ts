@@ -31,6 +31,20 @@ export interface Member {
   completed_freedom_day: boolean
   completed_grand_day: boolean
   is_admin: boolean
+  // Church-compatible fields
+  nickname: string | null
+  gender: string | null
+  marital_status: string | null
+  spouse_name: string | null
+  children_names: string | null
+  father_name: string | null
+  mother_name: string | null
+  emergency_contact_name: string | null
+  emergency_contact_number: string | null
+  occupation: string | null
+  date_joined_ctjcc: string | null
+  spiritual_birthday: string | null
+  baptized_in_water: boolean
   created_at: string
   updated_at: string
 }

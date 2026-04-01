@@ -51,7 +51,7 @@ export function QrModal({ eventName, eventId, baseUrl, onClose }: QrModalProps) 
           <h2 style="margin-bottom:8px;">${eventName}</h2>
           <p style="color:#666;margin-bottom:24px;">Scan to check in</p>
           <img src="${dataUrl}" style="width:300px;height:300px;" />
-          <p style="color:#999;margin-top:16px;font-size:12px;">CTJ Marikina Youth & YA</p>
+          <p style="color:#999;margin-top:16px;font-size:12px;">CTJCC Marikina Youth & YA</p>
         </body>
       </html>
     `)

@@ -48,7 +48,7 @@ export function Sidebar() {
           <Sparkles className="size-5 text-emerald-400" />
         </div>
         <div>
-          <p className="text-sm font-bold gradient-text">CTJ Marikina</p>
+          <p className="text-sm font-bold gradient-text">CTJCC Marikina</p>
           <p className="text-[10px] text-muted-foreground">Admin Dashboard</p>
         </div>
       </div>

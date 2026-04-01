@@ -29,6 +29,17 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
   const [contactNumber, setContactNumber] = useState(member.contact_number || "")
   const [facebookLink, setFacebookLink] = useState(member.facebook_link || "")
   const [address, setAddress] = useState(member.address || "")
+
+  // Church-compatible fields (youth-appropriate)
+  const [nickname, setNickname] = useState(member.nickname || "")
+  const [gender, setGender] = useState(member.gender || "")
+  const [fatherName, setFatherName] = useState(member.father_name || "")
+  const [motherName, setMotherName] = useState(member.mother_name || "")
+  const [emergencyContactName, setEmergencyContactName] = useState(member.emergency_contact_name || "")
+  const [emergencyContactNumber, setEmergencyContactNumber] = useState(member.emergency_contact_number || "")
+  const [occupation, setOccupation] = useState(member.occupation || "")
+  const [baptizedInWater, setBaptizedInWater] = useState(member.baptized_in_water)
+
   const [disciplerName, setDisciplerName] = useState(member.discipler_name || "")
   const [disciples, setDisciples] = useState(member.disciples || "")
   const [prospectDisciples, setProspectDisciples] = useState(member.prospect_disciples || "")
@@ -217,6 +228,14 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
         completed_fresh_start: completedFreshStart,
         completed_freedom_day: completedFreedomDay,
         completed_grand_day: completedGrandDay,
+        nickname: nickname.trim() || null,
+        gender: gender || null,
+        father_name: fatherName.trim() || null,
+        mother_name: motherName.trim() || null,
+        emergency_contact_name: emergencyContactName.trim() || null,
+        emergency_contact_number: emergencyContactNumber.trim() || null,
+        occupation: occupation.trim() || null,
+        baptized_in_water: baptizedInWater,
         updated_at: new Date().toISOString(),
       }
 
@@ -296,14 +315,52 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="edit-middle-name" className="text-muted-foreground">Middle Name</Label>
-          <Input
-            id="edit-middle-name"
-            value={middleName}
-            onChange={(e) => setMiddleName(e.target.value)}
-            className="h-12 text-base"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-middle-name" className="text-muted-foreground">Middle Name</Label>
+            <Input
+              id="edit-middle-name"
+              value={middleName}
+              onChange={(e) => setMiddleName(e.target.value)}
+              className="h-12 text-base"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-nickname" className="text-muted-foreground">Nickname</Label>
+            <Input
+              id="edit-nickname"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="What people call you"
+              className="h-12 text-base"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-gender" className="text-muted-foreground">Gender</Label>
+            <select
+              id="edit-gender"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className="flex w-full h-12 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-base text-foreground ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/50"
+            >
+              <option value="" className="bg-card">Select</option>
+              <option value="Male" className="bg-card">Male</option>
+              <option value="Female" className="bg-card">Female</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-occupation" className="text-muted-foreground">Occupation</Label>
+            <Input
+              id="edit-occupation"
+              value={occupation}
+              onChange={(e) => setOccupation(e.target.value)}
+              placeholder="Student, etc."
+              className="h-12 text-base"
+            />
+          </div>
         </div>
 
         <div className="space-y-1.5">
@@ -361,6 +418,67 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
             placeholder="Street, Barangay, City"
             className="h-12 text-base"
           />
+        </div>
+      </section>
+
+      <Separator className="bg-white/[0.06]" />
+
+      {/* Family */}
+      <section className="space-y-4">
+        <SectionHeader>Family</SectionHeader>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-father" className="text-muted-foreground">Father&apos;s Name</Label>
+            <Input
+              id="edit-father"
+              value={fatherName}
+              onChange={(e) => setFatherName(e.target.value)}
+              placeholder="Full name"
+              className="h-12 text-base"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-mother" className="text-muted-foreground">Mother&apos;s Name</Label>
+            <Input
+              id="edit-mother"
+              value={motherName}
+              onChange={(e) => setMotherName(e.target.value)}
+              placeholder="Full name"
+              className="h-12 text-base"
+            />
+          </div>
+        </div>
+      </section>
+
+      <Separator className="bg-white/[0.06]" />
+
+      {/* Emergency Contact */}
+      <section className="space-y-4">
+        <SectionHeader>Emergency Contact</SectionHeader>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-ec-name" className="text-muted-foreground">Contact Person</Label>
+            <Input
+              id="edit-ec-name"
+              value={emergencyContactName}
+              onChange={(e) => setEmergencyContactName(e.target.value)}
+              placeholder="Name"
+              className="h-12 text-base"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-ec-number" className="text-muted-foreground">Contact Number</Label>
+            <Input
+              id="edit-ec-number"
+              type="tel"
+              value={emergencyContactNumber}
+              onChange={(e) => setEmergencyContactNumber(e.target.value)}
+              placeholder="09XX XXX XXXX"
+              className="h-12 text-base"
+            />
+          </div>
         </div>
       </section>
 
@@ -522,6 +640,10 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
           <ToggleRow label="Fresh Start" checked={completedFreshStart} onCheckedChange={setCompletedFreshStart} />
           <ToggleRow label="Freedom Day" checked={completedFreedomDay} onCheckedChange={setCompletedFreedomDay} />
           <ToggleRow label="Grand Day" checked={completedGrandDay} onCheckedChange={setCompletedGrandDay} />
+
+          <div className="h-px bg-white/[0.06]" />
+
+          <ToggleRow label="Baptized in Water" checked={baptizedInWater} onCheckedChange={setBaptizedInWater} />
         </div>
       </section>
 

@@ -163,23 +163,64 @@ export default function MembersPage() {
           </div>
 
           {/* Details grid */}
+          {/* Personal Info */}
           <div className="grid sm:grid-cols-2 gap-4 text-sm">
+            <InfoRow label="Nickname" value={m.nickname} />
+            <InfoRow label="Gender" value={m.gender} />
             <InfoRow label="Contact" value={m.contact_number} />
-            <InfoRow label="Address" value={m.address} />
-            <InfoRow label="Facebook" value={m.facebook_link} />
             <InfoRow label="Birthdate" value={m.birthdate ? format(new Date(m.birthdate), "MMM d, yyyy") : null} />
-            <InfoRow label="Discipler" value={m.discipler_name} />
-            <InfoRow label="Ministry" value={m.ministry_involvements} />
-            <InfoRow label="Lifeline Leader" value={m.lifeline_leader} />
-            <InfoRow label="Joined" value={format(new Date(m.created_at), "MMM d, yyyy")} />
+            <InfoRow label="Address" value={m.address} />
+            <InfoRow label="Occupation" value={m.occupation} />
+            <InfoRow label="Facebook" value={m.facebook_link} />
+            <InfoRow label="Joined App" value={format(new Date(m.created_at), "MMM d, yyyy")} />
+          </div>
+
+          {/* Family */}
+          <div>
+            <p className="text-xs font-semibold text-emerald-400/80 uppercase tracking-wider mb-2">
+              Family
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+              <InfoRow label="Father" value={m.father_name} />
+              <InfoRow label="Mother" value={m.mother_name} />
+              <InfoRow label="Marital Status" value={m.marital_status} />
+              <InfoRow label="Spouse" value={m.spouse_name} />
+              <InfoRow label="Children" value={m.children_names} />
+            </div>
+          </div>
+
+          {/* Emergency Contact */}
+          <div>
+            <p className="text-xs font-semibold text-emerald-400/80 uppercase tracking-wider mb-2">
+              Emergency Contact
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+              <InfoRow label="Contact Person" value={m.emergency_contact_name} />
+              <InfoRow label="Contact Number" value={m.emergency_contact_number} />
+            </div>
+          </div>
+
+          {/* Discipleship & Ministry */}
+          <div>
+            <p className="text-xs font-semibold text-emerald-400/80 uppercase tracking-wider mb-2">
+              Discipleship & Ministry
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+              <InfoRow label="Discipler" value={m.discipler_name} />
+              <InfoRow label="Ministry" value={m.ministry_involvements} />
+              <InfoRow label="Lifeline Leader" value={m.lifeline_leader} />
+              <InfoRow label="Date Joined CTJCC" value={m.date_joined_ctjcc} />
+              <InfoRow label="Spiritual Birthday" value={m.spiritual_birthday} />
+            </div>
           </div>
 
           {/* Seminar completion */}
           <div>
             <p className="text-xs font-semibold text-emerald-400/80 uppercase tracking-wider mb-2">
-              Seminars
+              Status
             </p>
             <div className="flex flex-wrap gap-2">
+              <StatusBadge label="Baptized" completed={m.baptized_in_water} />
               <StatusBadge label="REACH" completed={m.completed_reach} />
               <StatusBadge label="Fresh Start" completed={m.completed_fresh_start} />
               <StatusBadge label="Freedom Day" completed={m.completed_freedom_day} />

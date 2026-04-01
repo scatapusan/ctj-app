@@ -165,10 +165,10 @@ function AttendPageContent() {
             <Sparkles className="size-8 text-emerald-400" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight gradient-text">
-            CTJ Marikina
+            CTJCC Marikina
           </h1>
           <p className="text-sm text-muted-foreground">
-            Youth and YA Attendance
+            Youth & Young Adult Attendance
           </p>
         </div>
 
