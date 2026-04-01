@@ -111,8 +111,8 @@ export function PinEntry({ memberId, onVerified, onCancel }: PinEntryProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col items-center text-center space-y-6 py-4">
       <div className="relative">
-        <div className="rounded-full bg-emerald-500/10 p-4 ring-1 ring-emerald-500/20">
-          <Lock className="size-8 text-emerald-400" />
+        <div className="rounded-full bg-orange-500/10 p-4 ring-1 ring-orange-500/20">
+          <Lock className="size-8 text-orange-400" />
         </div>
       </div>
 
@@ -138,7 +138,7 @@ export function PinEntry({ memberId, onVerified, onCancel }: PinEntryProps) {
             onChange={(e) => handleDigitChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
             onPaste={i === 0 ? handlePaste : undefined}
-            className="w-14 h-16 text-center text-2xl font-bold rounded-xl bg-white/[0.04] border border-white/[0.1] text-foreground focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200"
+            className="w-14 h-16 text-center text-2xl font-bold rounded-xl bg-white/[0.04] border border-white/[0.1] text-foreground focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 focus:outline-none transition-all duration-200"
             disabled={loading}
             autoComplete="off"
           />

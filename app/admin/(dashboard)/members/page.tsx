@@ -127,7 +127,7 @@ export default function MembersPage() {
           variant="ghost"
           size="sm"
           onClick={() => setSelectedMember(null)}
-          className="text-muted-foreground hover:text-emerald-400"
+          className="text-muted-foreground hover:text-orange-400"
         >
           <ArrowLeft className="size-4 mr-1" />
           Back to Members
@@ -136,9 +136,9 @@ export default function MembersPage() {
         <div className="glass rounded-xl p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 ring-2 ring-emerald-500/30">
+            <Avatar className="h-16 w-16 ring-2 ring-orange-500/30">
               {m.photo_url ? <AvatarImage src={m.photo_url} alt={m.first_name} /> : null}
-              <AvatarFallback className="text-lg font-semibold bg-emerald-500/10 text-emerald-400">
+              <AvatarFallback className="text-lg font-semibold bg-orange-500/10 text-orange-400">
                 {initials}
               </AvatarFallback>
             </Avatar>
@@ -149,12 +149,12 @@ export default function MembersPage() {
               <p className="text-sm text-muted-foreground">{m.email}</p>
               <div className="flex gap-2 mt-1">
                 {m.is_admin && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20 font-medium">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20 font-medium">
                     Admin
                   </span>
                 )}
                 {m.is_youth_ya_core && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20 font-medium">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20 font-medium">
                     Core
                   </span>
                 )}
@@ -177,7 +177,7 @@ export default function MembersPage() {
 
           {/* Family */}
           <div>
-            <p className="text-xs font-semibold text-emerald-400/80 uppercase tracking-wider mb-2">
+            <p className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider mb-2">
               Family
             </p>
             <div className="grid sm:grid-cols-2 gap-4 text-sm">
@@ -191,7 +191,7 @@ export default function MembersPage() {
 
           {/* Emergency Contact */}
           <div>
-            <p className="text-xs font-semibold text-emerald-400/80 uppercase tracking-wider mb-2">
+            <p className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider mb-2">
               Emergency Contact
             </p>
             <div className="grid sm:grid-cols-2 gap-4 text-sm">
@@ -202,7 +202,7 @@ export default function MembersPage() {
 
           {/* Discipleship & Ministry */}
           <div>
-            <p className="text-xs font-semibold text-emerald-400/80 uppercase tracking-wider mb-2">
+            <p className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider mb-2">
               Discipleship & Ministry
             </p>
             <div className="grid sm:grid-cols-2 gap-4 text-sm">
@@ -216,7 +216,7 @@ export default function MembersPage() {
 
           {/* Seminar completion */}
           <div>
-            <p className="text-xs font-semibold text-emerald-400/80 uppercase tracking-wider mb-2">
+            <p className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider mb-2">
               Status
             </p>
             <div className="flex flex-wrap gap-2">
@@ -262,7 +262,7 @@ export default function MembersPage() {
 
         {/* Attendance history */}
         <div className="glass rounded-xl p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-emerald-400/80 uppercase tracking-wider">
+          <h3 className="text-sm font-semibold text-orange-400/80 uppercase tracking-wider">
             Attendance History ({attendanceHistory.length})
           </h3>
 
@@ -276,7 +276,7 @@ export default function MembersPage() {
                   className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/[0.02] border border-white/[0.04]"
                 >
                   <span className="text-sm text-foreground/80 flex items-center gap-2">
-                    <Calendar className="size-3 text-emerald-400/60" />
+                    <Calendar className="size-3 text-orange-400/60" />
                     {a.event_name}
                   </span>
                   <span className="text-xs text-muted-foreground">
@@ -327,7 +327,7 @@ export default function MembersPage() {
               return (
                 <Avatar className="h-8 w-8">
                   {m.photo_url ? <AvatarImage src={m.photo_url} alt={m.first_name} /> : null}
-                  <AvatarFallback className="text-xs bg-emerald-500/10 text-emerald-400">
+                  <AvatarFallback className="text-xs bg-orange-500/10 text-orange-400">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -344,7 +344,7 @@ export default function MembersPage() {
                 <span className="font-medium">
                   {m.first_name} {m.last_name}
                   {m.is_admin && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20">
                       Admin
                     </span>
                   )}
@@ -377,7 +377,7 @@ function StatusBadge({ label, completed }: { label: string; completed: boolean }
     <span
       className={`text-xs px-2.5 py-1 rounded-full font-medium ${
         completed
-          ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20"
+          ? "bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20"
           : "bg-white/[0.04] text-muted-foreground/60 ring-1 ring-white/[0.06]"
       }`}
     >

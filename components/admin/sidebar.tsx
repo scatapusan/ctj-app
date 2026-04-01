@@ -44,8 +44,8 @@ export function Sidebar() {
     <>
       {/* Logo */}
       <div className="px-4 py-6 flex items-center gap-3">
-        <div className="rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 p-2.5 ring-1 ring-white/[0.1]">
-          <Sparkles className="size-5 text-emerald-400" />
+        <div className="rounded-xl bg-gradient-to-br from-orange-500/20 to-blue-500/20 p-2.5 ring-1 ring-white/[0.1]">
+          <Sparkles className="size-5 text-orange-400" />
         </div>
         <div>
           <p className="text-sm font-bold gradient-text">CTJCC Marikina</p>
@@ -65,7 +65,7 @@ export function Sidebar() {
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 active
-                  ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20"
+                  ? "bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20"
                   : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
               }`}
             >

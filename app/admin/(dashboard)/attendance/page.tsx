@@ -111,7 +111,7 @@ export default function AttendancePage() {
 
       {/* Event selector */}
       <div className="glass rounded-xl p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-emerald-400/80 uppercase tracking-wider">
+        <h2 className="text-sm font-semibold text-orange-400/80 uppercase tracking-wider">
           Select Event
         </h2>
 
@@ -122,7 +122,7 @@ export default function AttendancePage() {
               onClick={() => selectEvent(event.id)}
               className={`text-left p-3 rounded-xl border transition-all duration-200 ${
                 selectedEventId === event.id
-                  ? "border-emerald-500/40 bg-emerald-500/10 ring-1 ring-emerald-500/20"
+                  ? "border-orange-500/40 bg-orange-500/10 ring-1 ring-orange-500/20"
                   : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]"
               }`}
             >
@@ -148,7 +148,7 @@ export default function AttendancePage() {
               <h2 className="text-lg font-semibold text-foreground">
                 {selectedEvent?.name}
               </h2>
-              <span className="flex items-center gap-1 text-sm text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full ring-1 ring-emerald-500/20">
+              <span className="flex items-center gap-1 text-sm text-orange-400 bg-orange-500/10 px-2.5 py-1 rounded-full ring-1 ring-orange-500/20">
                 <Users className="size-3.5" />
                 {records.length}
               </span>

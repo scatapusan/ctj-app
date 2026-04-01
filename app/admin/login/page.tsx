@@ -66,16 +66,16 @@ function LoginForm() {
     <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center">
       {/* Background orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-emerald-500/[0.07] blur-[100px] animate-float" />
-        <div className="absolute top-1/3 -right-32 w-64 h-64 rounded-full bg-cyan-500/[0.05] blur-[80px] animate-float-slow" />
+        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-orange-500/[0.07] blur-[100px] animate-float" />
+        <div className="absolute top-1/3 -right-32 w-64 h-64 rounded-full bg-blue-500/[0.05] blur-[80px] animate-float-slow" />
       </div>
 
       <div className="relative w-full max-w-sm mx-auto px-4">
         <div className="glass rounded-2xl p-8 space-y-6">
           {/* Header */}
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 p-4 ring-1 ring-white/[0.1] glow-emerald">
-              <ShieldCheck className="size-8 text-emerald-400" />
+            <div className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/20 to-blue-500/20 p-4 ring-1 ring-white/[0.1] glow-orange">
+              <ShieldCheck className="size-8 text-orange-400" />
             </div>
             <h1 className="text-xl font-bold gradient-text">Admin Login</h1>
             <p className="text-sm text-muted-foreground">CTJCC Marikina Dashboard</p>
@@ -85,7 +85,7 @@ function LoginForm() {
             <div className="space-y-1.5">
               <Label htmlFor="admin-email" className="text-muted-foreground">Email</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-emerald-400/60" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-orange-400/60" />
                 <Input
                   id="admin-email"
                   type="email"
@@ -103,7 +103,7 @@ function LoginForm() {
             <div className="space-y-1.5">
               <Label htmlFor="admin-password" className="text-muted-foreground">Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-emerald-400/60" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-orange-400/60" />
                 <Input
                   id="admin-password"
                   type="password"

@@ -47,7 +47,7 @@ export function EventSelector({ onSelect }: EventSelectorProps) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <Loader2 className="size-8 animate-spin text-emerald-400" />
+        <Loader2 className="size-8 animate-spin text-orange-400" />
         <p className="mt-3 text-sm">Loading events...</p>
       </div>
     )

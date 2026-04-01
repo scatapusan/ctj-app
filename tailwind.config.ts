@@ -49,9 +49,9 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        glow: "0 0 20px rgba(16, 185, 129, 0.25), 0 0 60px rgba(16, 185, 129, 0.1)",
-        "glow-sm": "0 0 10px rgba(16, 185, 129, 0.2)",
-        "glow-cyan": "0 0 20px rgba(6, 182, 212, 0.25), 0 0 60px rgba(6, 182, 212, 0.1)",
+        glow: "0 0 20px rgba(245, 145, 30, 0.25), 0 0 60px rgba(245, 145, 30, 0.1)",
+        "glow-sm": "0 0 10px rgba(245, 145, 30, 0.2)",
+        "glow-blue": "0 0 20px rgba(30, 95, 175, 0.25), 0 0 60px rgba(30, 95, 175, 0.1)",
       },
       keyframes: {
         "accordion-down": {

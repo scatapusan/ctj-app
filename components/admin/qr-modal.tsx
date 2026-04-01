@@ -24,8 +24,8 @@ export function QrModal({ eventName, eventId, baseUrl, onClose }: QrModalProps) 
         width: 280,
         margin: 2,
         color: {
-          dark: "#10b981",
-          light: "#0a0a0f",
+          dark: "#f59120",
+          light: "#0a0a12",
         },
       }).catch(() => setError("Failed to generate QR code."))
     }
@@ -51,7 +51,7 @@ export function QrModal({ eventName, eventId, baseUrl, onClose }: QrModalProps) 
           <h2 style="margin-bottom:8px;">${eventName}</h2>
           <p style="color:#666;margin-bottom:24px;">Scan to check in</p>
           <img src="${dataUrl}" style="width:300px;height:300px;" />
-          <p style="color:#999;margin-top:16px;font-size:12px;">CTJCC Marikina Youth & YA</p>
+          <p style="color:#999;margin-top:16px;font-size:12px;">Come To Jesus Community Church of Marikina — Youth & YA</p>
         </body>
       </html>
     `)

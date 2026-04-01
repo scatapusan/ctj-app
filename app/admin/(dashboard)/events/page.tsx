@@ -168,7 +168,7 @@ export default function EventsPage() {
       {showForm && (
         <div className="glass rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-emerald-400/80 uppercase tracking-wider">
+            <h2 className="text-sm font-semibold text-orange-400/80 uppercase tracking-wider">
               {editingId ? "Edit Event" : "New Event"}
             </h2>
             <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground">
@@ -245,7 +245,7 @@ export default function EventsPage() {
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                       event.is_active
-                        ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20"
+                        ? "bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20"
                         : "bg-white/[0.04] text-muted-foreground ring-1 ring-white/[0.08]"
                     }`}
                   >

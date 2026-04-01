@@ -85,7 +85,7 @@ export function EmailLookup({
           Email Address
         </Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-emerald-400/60" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-orange-400/60" />
           <Input
             id="email"
             type="email"

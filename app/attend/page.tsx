@@ -153,16 +153,16 @@ function AttendPageContent() {
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Animated background orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-emerald-500/[0.07] blur-[100px] animate-float" />
-        <div className="absolute top-1/3 -right-32 w-64 h-64 rounded-full bg-cyan-500/[0.05] blur-[80px] animate-float-slow" />
-        <div className="absolute -bottom-20 left-1/4 w-72 h-72 rounded-full bg-emerald-600/[0.04] blur-[90px] animate-float" style={{ animationDelay: "2s" }} />
+        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-orange-500/[0.07] blur-[100px] animate-float" />
+        <div className="absolute top-1/3 -right-32 w-64 h-64 rounded-full bg-blue-500/[0.05] blur-[80px] animate-float-slow" />
+        <div className="absolute -bottom-20 left-1/4 w-72 h-72 rounded-full bg-amber-600/[0.04] blur-[90px] animate-float" style={{ animationDelay: "2s" }} />
       </div>
 
       <div className="relative max-w-md mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <div className="text-center space-y-3 pt-2">
-          <div className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 p-4 ring-1 ring-white/[0.1] glow-emerald">
-            <Sparkles className="size-8 text-emerald-400" />
+          <div className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 p-4 ring-1 ring-white/[0.1] glow-orange">
+            <Sparkles className="size-8 text-orange-400" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight gradient-text">
             CTJCC Marikina
@@ -178,7 +178,7 @@ function AttendPageContent() {
             variant="ghost"
             size="sm"
             onClick={handleBack}
-            className="text-muted-foreground hover:text-emerald-400"
+            className="text-muted-foreground hover:text-orange-400"
           >
             <ArrowLeft className="size-4 mr-1" />
             Back
@@ -201,7 +201,7 @@ function AttendPageContent() {
               <Button
                 variant="ghost"
                 size="lg"
-                className="w-full min-h-[44px] text-base text-muted-foreground hover:text-emerald-400"
+                className="w-full min-h-[44px] text-base text-muted-foreground hover:text-orange-400"
                 onClick={handleProfileLookup}
               >
                 <Pencil className="size-4 mr-2" />
@@ -266,14 +266,14 @@ function AttendPageContent() {
 
           {step === "profile-saved" && (
             <div className="flex flex-col items-center justify-center text-center space-y-6 py-8 relative">
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full bg-emerald-500/10 blur-[60px] animate-pulse-glow" />
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full bg-orange-500/10 blur-[60px] animate-pulse-glow" />
               <div className="relative animate-check-scale">
-                <CheckCircle2 className="size-20 text-emerald-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.4)]" strokeWidth={1.5} />
+                <CheckCircle2 className="size-20 text-orange-400 drop-shadow-[0_0_20px_rgba(245,145,30,0.4)]" strokeWidth={1.5} />
               </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-bold gradient-text">Profile Updated!</h2>
                 <p className="text-lg text-muted-foreground">
-                  Looking good, <span className="font-semibold text-emerald-400">{firstName}</span>!
+                  Looking good, <span className="font-semibold text-orange-400">{firstName}</span>!
                 </p>
               </div>
               <Button
@@ -290,22 +290,22 @@ function AttendPageContent() {
           {step === "already-checked-in" && member && (
             <div className="flex flex-col items-center text-center space-y-4 py-6">
               <div className="relative">
-                <Avatar className="h-20 w-20 ring-2 ring-cyan-500/30 shadow-glow-cyan">
+                <Avatar className="h-20 w-20 ring-2 ring-blue-500/30 shadow-glow-blue">
                   {member.photo_url ? (
                     <AvatarImage src={member.photo_url} alt={member.first_name} />
                   ) : null}
-                  <AvatarFallback className="text-xl font-semibold bg-cyan-500/10 text-cyan-400">
+                  <AvatarFallback className="text-xl font-semibold bg-blue-500/10 text-blue-400">
                     {(member.first_name?.[0] || "").toUpperCase()}{(member.last_name?.[0] || "").toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute -bottom-1 -right-1 rounded-full bg-cyan-500 p-1.5 ring-2 ring-background">
+                <div className="absolute -bottom-1 -right-1 rounded-full bg-blue-500 p-1.5 ring-2 ring-background">
                   <CheckCircle2 className="size-3.5 text-white" />
                 </div>
               </div>
               <div className="space-y-1">
                 <h2 className="text-xl font-semibold">Already checked in!</h2>
                 <p className="text-muted-foreground">
-                  <span className="font-medium text-emerald-400">{firstName}</span> is already marked present for this event.
+                  <span className="font-medium text-orange-400">{firstName}</span> is already marked present for this event.
                 </p>
               </div>
               <div className="w-full space-y-3 mt-2">
@@ -333,7 +333,7 @@ function AttendPageContent() {
 
         {/* Footer */}
         <p className="text-center text-xs text-muted-foreground/50">
-          Christ the Joy Church Marikina
+          Come To Jesus Community Church of Marikina
         </p>
       </div>
     </div>

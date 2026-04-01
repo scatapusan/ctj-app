@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 230 20% 5%;
+    --background: 220 25% 5%;
     --foreground: 210 40% 96%;
-    --card: 230 20% 8%;
+    --card: 220 25% 8%;
     --card-foreground: 210 40% 96%;
-    --popover: 230 20% 8%;
+    --popover: 220 25% 8%;
     --popover-foreground: 210 40% 96%;
-    --primary: 160 84% 55%;
-    --primary-foreground: 230 20% 5%;
-    --secondary: 230 15% 15%;
+    --primary: 28 90% 54%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 15%;
     --secondary-foreground: 210 40% 90%;
-    --muted: 230 15% 15%;
+    --muted: 220 15% 15%;
     --muted-foreground: 215 15% 55%;
-    --accent: 185 80% 50%;
-    --accent-foreground: 230 20% 5%;
+    --accent: 213 70% 40%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
     --border: 215 20% 16%;
     --input: 215 20% 16%;
-    --ring: 160 84% 55%;
+    --ring: 28 90% 54%;
     --radius: 0.75rem;
   }
 
@@ -49,15 +49,15 @@
   }
 
   .gradient-text {
-    @apply bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent;
   }
 
-  .glow-emerald {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.15), 0 0 60px rgba(16, 185, 129, 0.05);
+  .glow-orange {
+    box-shadow: 0 0 20px rgba(245, 145, 30, 0.15), 0 0 60px rgba(245, 145, 30, 0.05);
   }
 
-  .glow-emerald-strong {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3), 0 0 60px rgba(16, 185, 129, 0.1);
+  .glow-orange-strong {
+    box-shadow: 0 0 20px rgba(245, 145, 30, 0.3), 0 0 60px rgba(245, 145, 30, 0.1);
   }
 }
 
