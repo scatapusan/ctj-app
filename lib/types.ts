@@ -47,6 +47,7 @@ export interface Member {
   baptized_in_water: boolean
   member_group: string | null
   is_guest: boolean
+  privacy_consent_at: string | null
   created_at: string
   updated_at: string
 }

@@ -16,6 +16,8 @@ import {
   Star,
   StarOff,
   UsersRound,
+  Trash2,
+  Download,
 } from "lucide-react"
 import { format } from "date-fns"
 
@@ -137,6 +139,95 @@ export default function MembersPage() {
       setSelectedMember({ ...selectedMember, member_group: group })
     }
     setActionLoading(false)
+  }
+
+  const [deletingMember, setDeletingMember] = useState(false)
+
+  async function handleDeleteMember(member: Member) {
+    setActionLoading(true)
+    try {
+      const supabase = createBrowserClient()
+
+      // Delete attendance records first
+      await supabase.from("attendance").delete().eq("member_id", member.id)
+
+      // Delete photo from storage if exists
+      if (member.photo_url) {
+        const parts = member.photo_url.split("/")
+        const fileName = parts[parts.length - 1]
+        if (fileName && !fileName.startsWith("http")) {
+          await supabase.storage.from("member-photos").remove([fileName])
+        }
+      }
+
+      // Delete the member
+      await supabase.from("members").delete().eq("id", member.id)
+
+      setSelectedMember(null)
+      setDeletingMember(false)
+      await loadMembers()
+    } catch (err) {
+      console.error("Delete error:", err)
+      alert("Failed to delete member. Please try again.")
+    }
+    setActionLoading(false)
+  }
+
+  function exportMemberData(member: Member) {
+    const data = {
+      personalInfo: {
+        firstName: member.first_name,
+        middleName: member.middle_name,
+        lastName: member.last_name,
+        nickname: member.nickname,
+        email: member.email,
+        gender: member.gender,
+        birthdate: member.birthdate,
+        contactNumber: member.contact_number,
+        address: member.address,
+        occupation: member.occupation,
+        facebookLink: member.facebook_link,
+      },
+      family: {
+        fatherName: member.father_name,
+        motherName: member.mother_name,
+        maritalStatus: member.marital_status,
+        spouseName: member.spouse_name,
+        childrenNames: member.children_names,
+      },
+      emergencyContact: {
+        name: member.emergency_contact_name,
+        number: member.emergency_contact_number,
+      },
+      churchInfo: {
+        memberGroup: member.member_group,
+        isGuest: member.is_guest,
+        disciplerName: member.discipler_name,
+        disciples: member.disciples,
+        ministryInvolvements: member.ministry_involvements,
+        lifelineLeader: member.lifeline_leader,
+        dateJoinedCTJCC: member.date_joined_ctjcc,
+        spiritualBirthday: member.spiritual_birthday,
+        baptizedInWater: member.baptized_in_water,
+        completedReach: member.completed_reach,
+        completedFreshStart: member.completed_fresh_start,
+        completedFreedomDay: member.completed_freedom_day,
+        completedGrandDay: member.completed_grand_day,
+      },
+      attendanceHistory: attendanceHistory.map((a) => ({
+        event: a.event_name,
+        checkedInAt: a.checked_in_at,
+      })),
+      exportedAt: new Date().toISOString(),
+    }
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `${member.first_name}_${member.last_name}_data.json`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   const filteredMembers = members.filter((m) => {
@@ -347,6 +438,53 @@ export default function MembersPage() {
                   <KeyRound className="size-4 mr-1.5" />
                   Reset PIN
                 </Button>
+              </div>
+            )}
+
+            {/* Data management — superadmin only */}
+            {isSuperadmin && (
+              <div className="flex gap-3 flex-wrap pt-2 border-t border-white/[0.06]">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportMemberData(m)}
+                >
+                  <Download className="size-4 mr-1.5" />
+                  Export Data
+                </Button>
+
+                {deletingMember ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-red-400">Permanently delete all data?</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-400 hover:text-red-300 text-xs"
+                      onClick={() => handleDeleteMember(m)}
+                      disabled={actionLoading}
+                    >
+                      Confirm Delete
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setDeletingMember(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-400 border-red-500/20 hover:bg-red-500/10 hover:text-red-300"
+                    onClick={() => setDeletingMember(true)}
+                  >
+                    <Trash2 className="size-4 mr-1.5" />
+                    Delete Member
+                  </Button>
+                )}
               </div>
             )}
           </div>

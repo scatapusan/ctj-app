@@ -54,6 +54,9 @@ export default function Home() {
         <p className="text-xs text-muted-foreground/50">
           Come To Jesus Community Church of Marikina
         </p>
+        <a href="/privacy" className="text-xs text-muted-foreground/40 underline underline-offset-2 hover:text-muted-foreground/60">
+          Privacy Policy
+        </a>
       </footer>
     </div>
   )

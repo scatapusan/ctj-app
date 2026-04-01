@@ -352,9 +352,12 @@ function AttendPageContent() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-muted-foreground/50">
-          Come To Jesus Community Church of Marikina
-        </p>
+        <div className="text-center text-xs text-muted-foreground/50 space-y-1">
+          <p>Come To Jesus Community Church of Marikina</p>
+          <a href="/privacy" className="underline underline-offset-2 hover:text-muted-foreground/70">
+            Privacy Policy
+          </a>
+        </div>
       </div>
     </div>
   )

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Camera, X, UserPlus, Lock } from "lucide-react"
 
 interface RegistrationFormProps {
@@ -60,6 +61,9 @@ export function RegistrationForm({
   const [completedFreedomDay, setCompletedFreedomDay] = useState(false)
   const [completedGrandDay, setCompletedGrandDay] = useState(false)
 
+  // Privacy consent
+  const [privacyConsent, setPrivacyConsent] = useState(false)
+
   // PIN (optional, defaults to 1234)
   const [pin, setPin] = useState("")
 
@@ -102,6 +106,7 @@ export function RegistrationForm({
     const errors: Record<string, string> = {}
     if (!firstName.trim()) errors.firstName = "First name is required"
     if (!lastName.trim()) errors.lastName = "Last name is required"
+    if (!privacyConsent) errors.privacy = "You must agree to the Privacy Policy"
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -167,6 +172,7 @@ export function RegistrationForm({
           emergency_contact_number: emergencyContactNumber.trim() || null,
           occupation: occupation.trim() || null,
           baptized_in_water: baptizedInWater,
+          privacy_consent_at: new Date().toISOString(),
           ...(pin.length === 4 ? { pin } : {}),
         })
         .select("id")
@@ -635,6 +641,37 @@ export function RegistrationForm({
             className="h-12 text-base tracking-widest text-center max-w-[200px]"
           />
         </div>
+      </section>
+
+      <Separator className="bg-white/[0.06]" />
+
+      {/* Privacy Consent */}
+      <section className="space-y-3">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Your information is collected for church attendance tracking and member care by CTJCC Marikina.
+        </p>
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="privacy-consent"
+            checked={privacyConsent}
+            onCheckedChange={(checked) => setPrivacyConsent(checked === true)}
+            className="mt-0.5"
+          />
+          <label htmlFor="privacy-consent" className="text-sm text-foreground/80 leading-relaxed cursor-pointer">
+            I have read and agree to the{" "}
+            <a
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-orange-400 underline underline-offset-2 hover:text-orange-300"
+            >
+              Privacy Policy
+            </a>
+          </label>
+        </div>
+        {fieldErrors.privacy && (
+          <p className="text-xs text-red-400">{fieldErrors.privacy}</p>
+        )}
       </section>
 
       {error && (
