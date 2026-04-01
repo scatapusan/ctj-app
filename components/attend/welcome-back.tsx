@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { createBrowserClient } from "@/lib/supabase"
+import { syncMember, syncAttendance } from "@/lib/sync-sheets"
 import type { Member } from "@/lib/types"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -42,6 +43,10 @@ export function WelcomeBack({ member, eventId, onSuccess, onEditProfile }: Welco
         return
       }
 
+      // Sync to Google Sheets (fire-and-forget)
+      syncMember(member.id)
+      syncAttendance(member.id, eventId)
+
       onSuccess()
     } catch {
       setError("Network error. Please check your connection.")
@@ -52,15 +57,15 @@ export function WelcomeBack({ member, eventId, onSuccess, onEditProfile }: Welco
   return (
     <div className="flex flex-col items-center text-center space-y-6 py-4">
       <div className="relative">
-        <Avatar className="h-24 w-24 ring-2 ring-emerald-500/30 shadow-glow">
+        <Avatar className="h-24 w-24 ring-2 ring-orange-500/30 shadow-glow">
           {member.photo_url ? (
             <AvatarImage src={member.photo_url} alt={member.first_name} />
           ) : null}
-          <AvatarFallback className="text-2xl font-semibold bg-emerald-500/10 text-emerald-400">
+          <AvatarFallback className="text-2xl font-semibold bg-orange-500/10 text-orange-400">
             {initials.toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <div className="absolute -bottom-1 -right-1 rounded-full bg-emerald-500 p-1.5 ring-2 ring-background">
+        <div className="absolute -bottom-1 -right-1 rounded-full bg-orange-500 p-1.5 ring-2 ring-background">
           <HandMetal className="size-3.5 text-white" />
         </div>
       </div>
@@ -96,7 +101,7 @@ export function WelcomeBack({ member, eventId, onSuccess, onEditProfile }: Welco
       <Button
         variant="ghost"
         size="lg"
-        className="w-full min-h-[44px] text-base text-muted-foreground hover:text-emerald-400"
+        className="w-full min-h-[44px] text-base text-muted-foreground hover:text-orange-400"
         onClick={onEditProfile}
       >
         <Pencil className="size-4 mr-2" />

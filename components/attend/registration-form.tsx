@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react"
 import { createBrowserClient } from "@/lib/supabase"
+import { syncMember, syncAttendance } from "@/lib/sync-sheets"
 import { differenceInYears, parse } from "date-fns"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -190,6 +191,10 @@ export function RegistrationForm({
         console.error("Attendance error:", attendError)
       }
 
+      // Sync to Google Sheets (fire-and-forget)
+      syncMember(newMember.id)
+      syncAttendance(newMember.id, eventId)
+
       onSuccess(firstName.trim())
     } catch {
       setError("Network error. Please check your connection.")
@@ -217,7 +222,7 @@ export function RegistrationForm({
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="first-name" className="text-muted-foreground">
-              First Name <span className="text-emerald-400">*</span>
+              First Name <span className="text-orange-400">*</span>
             </Label>
             <Input
               id="first-name"
@@ -233,7 +238,7 @@ export function RegistrationForm({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="last-name" className="text-muted-foreground">
-              Last Name <span className="text-emerald-400">*</span>
+              Last Name <span className="text-orange-400">*</span>
             </Label>
             <Input
               id="last-name"
@@ -279,7 +284,7 @@ export function RegistrationForm({
               id="gender"
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="flex w-full h-12 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-base text-foreground ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/50"
+              className="flex w-full h-12 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-base text-foreground ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 focus-visible:border-orange-500/50"
             >
               <option value="" className="bg-card">Select</option>
               <option value="Male" className="bg-card">Male</option>
@@ -309,7 +314,7 @@ export function RegistrationForm({
           />
           {age !== null && age >= 0 && (
             <p className="text-sm text-muted-foreground">
-              Age: <span className="font-medium text-emerald-400">{age} years old</span>
+              Age: <span className="font-medium text-orange-400">{age} years old</span>
             </p>
           )}
         </div>
@@ -437,7 +442,7 @@ export function RegistrationForm({
             <img
               src={photoPreview}
               alt="Preview"
-              className="w-full h-full rounded-xl object-cover ring-2 ring-emerald-500/30"
+              className="w-full h-full rounded-xl object-cover ring-2 ring-orange-500/30"
             />
             <button
               type="button"
@@ -451,9 +456,9 @@ export function RegistrationForm({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-emerald-500/20 py-8 text-muted-foreground hover:border-emerald-500/40 hover:text-emerald-400 transition-all duration-300 group"
+            className="w-full flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-orange-500/20 py-8 text-muted-foreground hover:border-orange-500/40 hover:text-orange-400 transition-all duration-300 group"
           >
-            <div className="rounded-full bg-emerald-500/10 p-3 group-hover:bg-emerald-500/20 transition-colors">
+            <div className="rounded-full bg-orange-500/10 p-3 group-hover:bg-orange-500/20 transition-colors">
               <Camera className="size-6" />
             </div>
             <span className="text-sm font-medium">Tap to take or upload a photo</span>
@@ -571,7 +576,7 @@ export function RegistrationForm({
 
           <div className="h-px bg-white/[0.06]" />
 
-          <p className="text-xs text-emerald-400/70 font-medium uppercase tracking-wider">
+          <p className="text-xs text-orange-400/70 font-medium uppercase tracking-wider">
             Completed Seminars
           </p>
 
@@ -663,7 +668,7 @@ export function RegistrationForm({
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-semibold text-emerald-400/80 uppercase tracking-wider">
+    <h3 className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider">
       {children}
     </h3>
   )

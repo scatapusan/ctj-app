@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { createBrowserClient } from "@/lib/supabase"
 import { StatsCard } from "@/components/admin/stats-card"
-import { Users, Calendar, ClipboardList, UserCheck } from "lucide-react"
+import { Users, Calendar, ClipboardList, UserCheck, Sheet, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
@@ -22,6 +22,8 @@ export default function AdminDashboard() {
   const [totalAdmins, setTotalAdmins] = useState(0)
   const [recent, setRecent] = useState<RecentCheckIn[]>([])
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
+  const [syncResult, setSyncResult] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -86,6 +88,25 @@ export default function AdminDashboard() {
     load()
   }, [])
 
+  async function handleSyncSheets() {
+    setSyncing(true)
+    setSyncResult(null)
+    try {
+      const res = await fetch("/api/sheets/export", { method: "POST" })
+      const data = await res.json()
+      if (data.ok) {
+        setSyncResult(`Synced ${data.exported.members} members and ${data.exported.attendance} attendance records`)
+      } else {
+        setSyncResult(`Error: ${data.error}`)
+      }
+    } catch {
+      setSyncResult("Network error. Please try again.")
+    } finally {
+      setSyncing(false)
+      setTimeout(() => setSyncResult(null), 5000)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -103,10 +124,10 @@ export default function AdminDashboard() {
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard label="Total Members" value={totalMembers} icon={Users} accent="emerald" />
-        <StatsCard label="Active Events" value={activeEvents} icon={Calendar} accent="cyan" />
+        <StatsCard label="Total Members" value={totalMembers} icon={Users} accent="orange" />
+        <StatsCard label="Active Events" value={activeEvents} icon={Calendar} accent="blue" />
         <StatsCard label="Today's Attendance" value={todayAttendance} icon={ClipboardList} accent="amber" />
-        <StatsCard label="Admins" value={totalAdmins} icon={UserCheck} accent="emerald" />
+        <StatsCard label="Admins" value={totalAdmins} icon={UserCheck} accent="orange" />
       </div>
 
       {/* Quick actions */}
@@ -129,11 +150,39 @@ export default function AdminDashboard() {
             Attendance Records
           </Button>
         </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSyncSheets}
+          disabled={syncing}
+        >
+          {syncing ? (
+            <>
+              <Loader2 className="size-4 mr-2 animate-spin" />
+              Syncing...
+            </>
+          ) : (
+            <>
+              <Sheet className="size-4 mr-2" />
+              Sync to Google Sheets
+            </>
+          )}
+        </Button>
       </div>
+
+      {syncResult && (
+        <div className={`rounded-lg border p-3 text-sm ${
+          syncResult.startsWith("Error") || syncResult.startsWith("Network")
+            ? "border-red-500/20 bg-red-500/10 text-red-400"
+            : "border-orange-500/20 bg-orange-500/10 text-orange-400"
+        }`}>
+          {syncResult}
+        </div>
+      )}
 
       {/* Recent check-ins */}
       <div className="glass rounded-xl p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-emerald-400/80 uppercase tracking-wider">
+        <h2 className="text-sm font-semibold text-orange-400/80 uppercase tracking-wider">
           Recent Check-ins
         </h2>
 
