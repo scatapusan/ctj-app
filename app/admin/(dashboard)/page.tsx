@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createBrowserClient } from "@/lib/supabase"
+import { useRole } from "@/components/admin/role-provider"
 import { StatsCard } from "@/components/admin/stats-card"
 import { Users, Calendar, ClipboardList, UserCheck, Sheet, Loader2 } from "lucide-react"
 import Link from "next/link"
@@ -16,6 +17,7 @@ interface RecentCheckIn {
 }
 
 export default function AdminDashboard() {
+  const { isSuperadmin } = useRole()
   const [totalMembers, setTotalMembers] = useState(0)
   const [activeEvents, setActiveEvents] = useState(0)
   const [todayAttendance, setTodayAttendance] = useState(0)
@@ -150,24 +152,26 @@ export default function AdminDashboard() {
             Attendance Records
           </Button>
         </Link>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleSyncSheets}
-          disabled={syncing}
-        >
-          {syncing ? (
-            <>
-              <Loader2 className="size-4 mr-2 animate-spin" />
-              Syncing...
-            </>
-          ) : (
-            <>
-              <Sheet className="size-4 mr-2" />
-              Sync to Google Sheets
-            </>
-          )}
-        </Button>
+        {isSuperadmin && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncSheets}
+            disabled={syncing}
+          >
+            {syncing ? (
+              <>
+                <Loader2 className="size-4 mr-2 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <Sheet className="size-4 mr-2" />
+                Sync to Google Sheets
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       {syncResult && (

@@ -45,6 +45,8 @@ export interface Member {
   date_joined_ctjcc: string | null
   spiritual_birthday: string | null
   baptized_in_water: boolean
+  member_group: string | null
+  is_guest: boolean
   created_at: string
   updated_at: string
 }

@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { createBrowserClient } from "@/lib/supabase"
+import { useRole } from "@/components/admin/role-provider"
 import { Button } from "@/components/ui/button"
 import {
   LayoutDashboard,
@@ -26,6 +27,7 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const { isSuperadmin, isCore } = useRole()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   async function handleLogout() {
@@ -49,7 +51,9 @@ export function Sidebar() {
         </div>
         <div>
           <p className="text-sm font-bold gradient-text">CTJCC Marikina</p>
-          <p className="text-[10px] text-muted-foreground">Admin Dashboard</p>
+          <p className="text-[10px] text-muted-foreground">
+            {isSuperadmin ? "Superadmin" : isCore ? "Core Leader" : "Dashboard"}
+          </p>
         </div>
       </div>
 

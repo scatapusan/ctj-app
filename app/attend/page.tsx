@@ -7,6 +7,7 @@ import { EventSelector } from "@/components/attend/event-selector"
 import { EmailLookup } from "@/components/attend/email-lookup"
 import { WelcomeBack } from "@/components/attend/welcome-back"
 import { RegistrationForm } from "@/components/attend/registration-form"
+import { GuestForm } from "@/components/attend/guest-form"
 import { PinEntry } from "@/components/attend/pin-entry"
 import { EditProfile } from "@/components/attend/edit-profile"
 import { SuccessScreen } from "@/components/attend/success-screen"
@@ -21,6 +22,7 @@ type FlowStep =
   | "profile-email"
   | "welcome-back"
   | "registration"
+  | "guest-form"
   | "pin-entry"
   | "edit-profile"
   | "success"
@@ -54,6 +56,15 @@ function AttendPageContent() {
   function handleNewMember(newEmail: string) {
     setEmail(newEmail)
     setStep("registration")
+  }
+
+  function handleGuestCheckIn() {
+    setStep("guest-form")
+  }
+
+  function handleGuestSuccess(name: string) {
+    setFirstName(name)
+    setStep("success")
   }
 
   function handleProfileLookup() {
@@ -121,7 +132,7 @@ function AttendPageContent() {
       setStep("select-event")
     } else if (step === "profile-email") {
       setStep("select-event")
-    } else if (step === "welcome-back" || step === "registration") {
+    } else if (step === "welcome-back" || step === "registration" || step === "guest-form") {
       setStep("email-input")
     } else if (step === "pin-entry") {
       if (returnToStep === "profile-saved") {
@@ -146,6 +157,7 @@ function AttendPageContent() {
     step === "profile-email" ||
     step === "welcome-back" ||
     step === "registration" ||
+    step === "guest-form" ||
     step === "pin-entry" ||
     step === "edit-profile"
 
@@ -220,6 +232,7 @@ function AttendPageContent() {
               onMemberFound={handleMemberFound}
               onNewMember={handleNewMember}
               onAlreadyCheckedIn={handleAlreadyCheckedIn}
+              onGuestCheckIn={handleGuestCheckIn}
             />
           )}
 
@@ -237,6 +250,13 @@ function AttendPageContent() {
               email={email}
               eventId={eventId}
               onSuccess={handleRegistrationSuccess}
+            />
+          )}
+
+          {step === "guest-form" && (
+            <GuestForm
+              eventId={eventId}
+              onSuccess={handleGuestSuccess}
             />
           )}
 

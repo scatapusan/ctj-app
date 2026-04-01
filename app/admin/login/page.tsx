@@ -40,16 +40,16 @@ function LoginForm() {
         return
       }
 
-      // Check admin status
+      // Check admin or core leader status
       const { data: member } = await supabase
         .from("members")
-        .select("is_admin")
+        .select("is_admin, is_youth_ya_core")
         .eq("email", email.trim().toLowerCase())
         .maybeSingle()
 
-      if (!member?.is_admin) {
+      if (!member?.is_admin && !member?.is_youth_ya_core) {
         await supabase.auth.signOut()
-        setError("You don't have admin access.")
+        setError("You don't have admin or core leader access.")
         setLoading(false)
         return
       }

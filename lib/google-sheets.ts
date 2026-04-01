@@ -28,7 +28,7 @@ const MEMBERS_HEADERS = [
   "Lifeline Members", "Ministry", "Youth/YA Core", "REACH Seminar",
   "Fresh Start", "Freedom Day", "Grand Day", "Baptized in Water",
   "Father's Name", "Mother's Name", "Emergency Contact", "Emergency #",
-  "Date Joined CTJCC", "Spiritual Birthday",
+  "Date Joined CTJCC", "Spiritual Birthday", "Member Group", "Guest",
 ]
 
 const ATTENDANCE_HEADERS = ["Full Name", "Email", "Event", "Checked In At"]
@@ -96,6 +96,8 @@ export function memberToRow(m: Member): string[] {
     m.emergency_contact_number || "",
     m.date_joined_ctjcc ? formatDate(m.date_joined_ctjcc) : "",
     m.spiritual_birthday ? formatDate(m.spiritual_birthday) : "",
+    m.member_group || "",
+    m.is_guest ? "Yes" : "No",
   ]
 }
 
@@ -174,7 +176,7 @@ export async function syncMemberToSheet(member: Member) {
     // Append new row
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `'${tab}'!A:AC`,
+      range: `'${tab}'!A:AE`,
       valueInputOption: "RAW",
       insertDataOption: "INSERT_ROWS",
       requestBody: { values: [row] },
@@ -219,7 +221,7 @@ export async function exportAllToSheet(
   // Clear existing data (keep nothing)
   await sheets.spreadsheets.values.clear({
     spreadsheetId,
-    range: "'Members'!A:AC",
+    range: "'Members'!A:AE",
   })
   // Write headers + all rows
   const memberRows = [MEMBERS_HEADERS, ...members.map(memberToRow)]

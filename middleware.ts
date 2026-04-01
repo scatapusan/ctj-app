@@ -38,14 +38,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Check if user is admin in members table
+  // Check if user is admin or core leader in members table
   const { data: member } = await supabase
     .from("members")
-    .select("is_admin")
+    .select("is_admin, is_youth_ya_core")
     .eq("email", user.email!)
     .maybeSingle()
 
-  if (!member?.is_admin) {
+  if (!member?.is_admin && !member?.is_youth_ya_core) {
     const loginUrl = new URL("/admin/login", request.url)
     loginUrl.searchParams.set("error", "not-admin")
     return NextResponse.redirect(loginUrl)

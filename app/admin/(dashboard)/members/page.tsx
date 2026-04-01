@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createBrowserClient, MEMBER_COLUMNS } from "@/lib/supabase"
+import { useRole } from "@/components/admin/role-provider"
 import type { Member } from "@/lib/types"
 import { DataTable } from "@/components/admin/data-table"
 import { Button } from "@/components/ui/button"
@@ -12,10 +13,16 @@ import {
   KeyRound,
   ArrowLeft,
   Calendar,
+  Star,
+  StarOff,
+  UsersRound,
 } from "lucide-react"
 import { format } from "date-fns"
 
+const MEMBER_GROUPS = ["Youth", "YA", "Singles"] as const
+
 export default function MembersPage() {
+  const { isSuperadmin } = useRole()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
@@ -23,7 +30,7 @@ export default function MembersPage() {
     { id: string; event_name: string; checked_in_at: string }[]
   >([])
   const [actionLoading, setActionLoading] = useState(false)
-  const [filter, setFilter] = useState<"all" | "admins" | "core">("all")
+  const [filter, setFilter] = useState<"all" | "admins" | "core" | "guests">("all")
 
   useEffect(() => {
     loadMembers()
@@ -90,6 +97,21 @@ export default function MembersPage() {
     setActionLoading(false)
   }
 
+  async function toggleCore(member: Member) {
+    setActionLoading(true)
+    const supabase = createBrowserClient()
+    await supabase
+      .from("members")
+      .update({ is_youth_ya_core: !member.is_youth_ya_core })
+      .eq("id", member.id)
+
+    await loadMembers()
+    if (selectedMember?.id === member.id) {
+      setSelectedMember({ ...member, is_youth_ya_core: !member.is_youth_ya_core })
+    }
+    setActionLoading(false)
+  }
+
   async function resetPin(memberId: string) {
     setActionLoading(true)
     const supabase = createBrowserClient()
@@ -102,9 +124,25 @@ export default function MembersPage() {
     setActionLoading(false)
   }
 
+  async function setMemberGroup(memberId: string, group: string | null) {
+    setActionLoading(true)
+    const supabase = createBrowserClient()
+    await supabase
+      .from("members")
+      .update({ member_group: group })
+      .eq("id", memberId)
+
+    await loadMembers()
+    if (selectedMember?.id === memberId) {
+      setSelectedMember({ ...selectedMember, member_group: group })
+    }
+    setActionLoading(false)
+  }
+
   const filteredMembers = members.filter((m) => {
     if (filter === "admins") return m.is_admin
     if (filter === "core") return m.is_youth_ya_core
+    if (filter === "guests") return m.is_guest
     return true
   })
 
@@ -156,6 +194,16 @@ export default function MembersPage() {
                 {m.is_youth_ya_core && (
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20 font-medium">
                     Core
+                  </span>
+                )}
+                {m.is_guest && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20 font-medium">
+                    Guest
+                  </span>
+                )}
+                {m.member_group && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20 font-medium">
+                    {m.member_group}
                   </span>
                 )}
               </div>
@@ -228,35 +276,79 @@ export default function MembersPage() {
             </div>
           </div>
 
-          {/* Admin actions */}
-          <div className="flex gap-3 flex-wrap pt-2 border-t border-white/[0.06]">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => toggleAdmin(m)}
-              disabled={actionLoading}
-            >
-              {m.is_admin ? (
-                <>
-                  <ShieldOff className="size-4 mr-1.5" />
-                  Remove Admin
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="size-4 mr-1.5" />
-                  Make Admin
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => resetPin(m.id)}
-              disabled={actionLoading}
-            >
-              <KeyRound className="size-4 mr-1.5" />
-              Reset PIN
-            </Button>
+          {/* Group assignment — both superadmin and core can set */}
+          <div className="pt-2 border-t border-white/[0.06] space-y-3">
+            <div>
+              <p className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider mb-2">
+                <UsersRound className="size-3 inline mr-1" />
+                Member Group
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {MEMBER_GROUPS.map((group) => (
+                  <Button
+                    key={group}
+                    variant={m.member_group === group ? "gradient" : "outline"}
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => setMemberGroup(m.id, m.member_group === group ? null : group)}
+                    disabled={actionLoading}
+                  >
+                    {group}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Admin actions — superadmin only */}
+            {isSuperadmin && (
+              <div className="flex gap-3 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleAdmin(m)}
+                  disabled={actionLoading}
+                >
+                  {m.is_admin ? (
+                    <>
+                      <ShieldOff className="size-4 mr-1.5" />
+                      Remove Admin
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="size-4 mr-1.5" />
+                      Make Admin
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleCore(m)}
+                  disabled={actionLoading}
+                >
+                  {m.is_youth_ya_core ? (
+                    <>
+                      <StarOff className="size-4 mr-1.5" />
+                      Remove Core
+                    </>
+                  ) : (
+                    <>
+                      <Star className="size-4 mr-1.5" />
+                      Make Core
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => resetPin(m.id)}
+                  disabled={actionLoading}
+                >
+                  <KeyRound className="size-4 mr-1.5" />
+                  Reset PIN
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -301,8 +393,8 @@ export default function MembersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2">
-        {(["all", "core", "admins"] as const).map((f) => (
+      <div className="flex gap-2 flex-wrap">
+        {(["all", "core", "admins", "guests"] as const).map((f) => (
           <Button
             key={f}
             variant={filter === f ? "gradient" : "ghost"}
@@ -310,7 +402,7 @@ export default function MembersPage() {
             onClick={() => setFilter(f)}
             className="text-xs capitalize"
           >
-            {f === "all" ? "All" : f === "core" ? "YA Core" : "Admins"}
+            {f === "all" ? "All" : f === "core" ? "Core" : f === "admins" ? "Admins" : "Guests"}
           </Button>
         ))}
       </div>
@@ -346,6 +438,21 @@ export default function MembersPage() {
                   {m.is_admin && (
                     <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20">
                       Admin
+                    </span>
+                  )}
+                  {m.is_youth_ya_core && !m.is_admin && (
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20">
+                      Core
+                    </span>
+                  )}
+                  {m.is_guest && (
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20">
+                      Guest
+                    </span>
+                  )}
+                  {m.member_group && (
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20">
+                      {m.member_group}
                     </span>
                   )}
                 </span>

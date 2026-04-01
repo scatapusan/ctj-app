@@ -6,13 +6,14 @@ import type { Member } from "@/lib/types"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, Mail } from "lucide-react"
+import { Loader2, Mail, UserPlus, UserCheck2 } from "lucide-react"
 
 interface EmailLookupProps {
   eventId: string
   onMemberFound: (member: Member) => void
   onNewMember: (email: string) => void
   onAlreadyCheckedIn: (member: Member) => void
+  onGuestCheckIn: () => void
 }
 
 export function EmailLookup({
@@ -20,10 +21,13 @@ export function EmailLookup({
   onMemberFound,
   onNewMember,
   onAlreadyCheckedIn,
+  onGuestCheckIn,
 }: EmailLookupProps) {
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showNotFound, setShowNotFound] = useState(false)
+  const [notFoundEmail, setNotFoundEmail] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -54,7 +58,9 @@ export function EmailLookup({
       }
 
       if (!member) {
-        onNewMember(trimmed)
+        setNotFoundEmail(trimmed)
+        setShowNotFound(true)
+        setLoading(false)
         return
       }
 
@@ -76,6 +82,60 @@ export function EmailLookup({
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show choice screen when member not found
+  if (showNotFound) {
+    return (
+      <div className="space-y-5 text-center">
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            No account found for <span className="text-orange-400 font-medium">{notFoundEmail}</span>
+          </p>
+          <p className="text-sm text-muted-foreground">How would you like to proceed?</p>
+        </div>
+
+        <div className="space-y-3">
+          <Button
+            variant="gradient"
+            size="lg"
+            className="w-full min-h-[48px] text-base font-semibold"
+            onClick={() => onNewMember(notFoundEmail)}
+          >
+            <UserPlus className="size-4 mr-2" />
+            Register as Member
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/[0.06]" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-card px-3 text-muted-foreground/60">or</span>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full min-h-[48px] text-base"
+            onClick={onGuestCheckIn}
+          >
+            <UserCheck2 className="size-4 mr-2" />
+            I&apos;m a Guest
+          </Button>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          onClick={() => { setShowNotFound(false); setEmail("") }}
+        >
+          Try a different email
+        </Button>
+      </div>
+    )
   }
 
   return (

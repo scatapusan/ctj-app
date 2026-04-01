@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createBrowserClient } from "@/lib/supabase"
+import { useRole } from "@/components/admin/role-provider"
 import type { Event } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +23,7 @@ import {
 import { format } from "date-fns"
 
 export default function EventsPage() {
+  const { isSuperadmin } = useRole()
   const [events, setEvents] = useState<(Event & { attendance_count: number })[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -284,35 +286,37 @@ export default function EventsPage() {
                   <Pencil className="size-4" />
                 </Button>
 
-                {deletingId === event.id ? (
-                  <div className="flex items-center gap-1">
+                {isSuperadmin && (
+                  deletingId === event.id ? (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-400 hover:text-red-300 text-xs"
+                        onClick={() => handleDelete(event.id)}
+                      >
+                        Confirm
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => setDeletingId(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-red-400 hover:text-red-300 text-xs"
-                      onClick={() => handleDelete(event.id)}
+                      className="text-muted-foreground hover:text-red-400"
+                      onClick={() => setDeletingId(event.id)}
+                      title="Delete"
                     >
-                      Confirm
+                      <Trash2 className="size-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => setDeletingId(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:text-red-400"
-                    onClick={() => setDeletingId(event.id)}
-                    title="Delete"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                  )
                 )}
               </div>
             </div>
