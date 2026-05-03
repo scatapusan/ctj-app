@@ -3,7 +3,6 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { createBrowserClient } from "@/lib/supabase"
 import { useRole } from "@/components/admin/role-provider"
 import { Button } from "@/components/ui/button"
 import {
@@ -32,8 +31,7 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   async function handleLogout() {
-    const supabase = createBrowserClient()
-    await supabase.auth.signOut()
+    await fetch("/api/admin/logout", { method: "POST" })
     router.push("/admin/login")
     router.refresh()
   }

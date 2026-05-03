@@ -1,12 +1,12 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import { createBrowserClient } from "@/lib/supabase"
 
 type Role = "superadmin" | "core" | "member"
 
 interface RoleContextValue {
   role: Role
+  email: string | null
   isSuperadmin: boolean
   isCore: boolean
   loading: boolean
@@ -14,6 +14,7 @@ interface RoleContextValue {
 
 const RoleContext = createContext<RoleContextValue>({
   role: "member",
+  email: null,
   isSuperadmin: false,
   isCore: false,
   loading: true,
@@ -25,42 +26,39 @@ export function useRole() {
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role>("member")
+  const [email, setEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let cancelled = false
     async function fetchRole() {
-      const supabase = createBrowserClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      try {
+        const res = await fetch("/api/admin/me", { credentials: "include" })
+        const data = await res.json().catch(() => ({}))
+        if (cancelled) return
 
-      if (!user?.email) {
-        setLoading(false)
-        return
+        if (data?.authenticated) {
+          if (data.role === "admin") setRole("superadmin")
+          else if (data.role === "core") setRole("core")
+          setEmail(data.email ?? null)
+        }
+      } catch {
+        // Network error — leave defaults
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-
-      const { data: member } = await supabase
-        .from("members")
-        .select("is_admin, is_youth_ya_core")
-        .eq("email", user.email)
-        .maybeSingle()
-
-      if (member?.is_admin) {
-        setRole("superadmin")
-      } else if (member?.is_youth_ya_core) {
-        setRole("core")
-      }
-
-      setLoading(false)
     }
-
     fetchRole()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   return (
     <RoleContext.Provider
       value={{
         role,
+        email,
         isSuperadmin: role === "superadmin",
         isCore: role === "core",
         loading,
