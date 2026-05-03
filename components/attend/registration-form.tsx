@@ -3,6 +3,7 @@
 import { useState, useRef } from "react"
 import { createBrowserClient } from "@/lib/supabase"
 import { syncMember, syncAttendance } from "@/lib/sync-sheets"
+import { toast } from "@/lib/toast"
 import { differenceInYears, parse } from "date-fns"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -132,6 +133,9 @@ export function RegistrationForm({
 
         if (uploadError) {
           console.error("Photo upload error:", uploadError)
+          toast.warning("Profile photo couldn't be uploaded", {
+            description: "We saved your registration — try adding a photo later.",
+          })
         } else {
           const { data: urlData } = supabase.storage
             .from("member-photos")

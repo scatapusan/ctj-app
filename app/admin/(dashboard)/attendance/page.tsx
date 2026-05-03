@@ -4,9 +4,12 @@ import { useEffect, useState } from "react"
 import { createBrowserClient } from "@/lib/supabase"
 import type { Event } from "@/lib/types"
 import { DataTable } from "@/components/admin/data-table"
+import { ListSkeleton } from "@/components/admin/list-skeleton"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { Download, Calendar, Users } from "lucide-react"
+import { Download, Calendar, Users, ClipboardList } from "lucide-react"
 import { format } from "date-fns"
+import Link from "next/link"
 
 interface AttendanceRecord {
   id: string
@@ -95,11 +98,7 @@ export default function AttendancePage() {
   const selectedEvent = events.find((e) => e.id === selectedEventId)
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    )
+    return <ListSkeleton rows={5} showSearch={false} />
   }
 
   return (
@@ -136,7 +135,16 @@ export default function AttendancePage() {
         </div>
 
         {events.length === 0 && (
-          <p className="text-sm text-muted-foreground">No events found.</p>
+          <div className="text-center py-6 space-y-3">
+            <ClipboardList className="size-8 text-muted-foreground/40 mx-auto" />
+            <p className="text-sm text-muted-foreground">No events yet.</p>
+            <Link
+              href="/admin/events"
+              className="inline-flex items-center gap-1.5 text-sm text-orange-400 hover:text-orange-300 underline underline-offset-2"
+            >
+              Create your first event
+            </Link>
+          </div>
         )}
       </div>
 
@@ -162,8 +170,13 @@ export default function AttendancePage() {
           </div>
 
           {recordsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-pulse text-muted-foreground">Loading records...</div>
+            <div className="space-y-3" aria-busy="true" role="status" aria-label="Loading attendance records">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="glass rounded-xl p-3 flex items-center gap-3">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-24 ml-auto" />
+                </div>
+              ))}
             </div>
           ) : (
             <DataTable
@@ -188,6 +201,20 @@ export default function AttendancePage() {
               searchKeys={["member_name", "email"]}
               searchPlaceholder="Search attendees..."
               emptyMessage="No one has checked in for this event yet."
+              mobileCard={(item) => {
+                const r = item as unknown as AttendanceRecord
+                return (
+                  <div className="glass rounded-xl p-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground truncate">{r.member_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{r.email}</p>
+                    </div>
+                    <span className="text-xs text-orange-400/80 font-medium shrink-0">
+                      {format(new Date(r.checked_in_at), "h:mm a")}
+                    </span>
+                  </div>
+                )
+              }}
             />
           )}
         </div>

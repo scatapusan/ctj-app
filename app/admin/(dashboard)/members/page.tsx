@@ -5,6 +5,7 @@ import { createBrowserClient, MEMBER_COLUMNS } from "@/lib/supabase"
 import { useRole } from "@/components/admin/role-provider"
 import type { Member } from "@/lib/types"
 import { DataTable } from "@/components/admin/data-table"
+import { ListSkeleton } from "@/components/admin/list-skeleton"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -18,8 +19,10 @@ import {
   UsersRound,
   Trash2,
   Download,
+  ChevronRight,
 } from "lucide-react"
 import { format } from "date-fns"
+import { toast } from "@/lib/toast"
 
 const MEMBER_GROUPS = ["Youth", "YA", "Singles"] as const
 
@@ -87,11 +90,23 @@ export default function MembersPage() {
   async function toggleAdmin(member: Member) {
     setActionLoading(true)
     const supabase = createBrowserClient()
-    await supabase
+    const { error } = await supabase
       .from("members")
       .update({ is_admin: !member.is_admin })
       .eq("id", member.id)
 
+    if (error) {
+      toast.error("Couldn't update admin status", {
+        description: error.message,
+        action: { label: "Retry", onClick: () => toggleAdmin(member) },
+      })
+      setActionLoading(false)
+      return
+    }
+
+    toast.success(
+      member.is_admin ? "Admin access removed" : "Admin access granted"
+    )
     await loadMembers()
     if (selectedMember?.id === member.id) {
       setSelectedMember({ ...member, is_admin: !member.is_admin })
@@ -102,11 +117,23 @@ export default function MembersPage() {
   async function toggleCore(member: Member) {
     setActionLoading(true)
     const supabase = createBrowserClient()
-    await supabase
+    const { error } = await supabase
       .from("members")
       .update({ is_youth_ya_core: !member.is_youth_ya_core })
       .eq("id", member.id)
 
+    if (error) {
+      toast.error("Couldn't update core status", {
+        description: error.message,
+        action: { label: "Retry", onClick: () => toggleCore(member) },
+      })
+      setActionLoading(false)
+      return
+    }
+
+    toast.success(
+      member.is_youth_ya_core ? "Core access removed" : "Core access granted"
+    )
     await loadMembers()
     if (selectedMember?.id === member.id) {
       setSelectedMember({ ...member, is_youth_ya_core: !member.is_youth_ya_core })
@@ -117,23 +144,42 @@ export default function MembersPage() {
   async function resetPin(memberId: string) {
     setActionLoading(true)
     const supabase = createBrowserClient()
-    await supabase
+    const { error } = await supabase
       .from("members")
       .update({ pin: "1234" })
       .eq("id", memberId)
 
-    alert("PIN has been reset to 1234.")
+    if (error) {
+      toast.error("Couldn't reset PIN", {
+        description: error.message,
+        action: { label: "Retry", onClick: () => resetPin(memberId) },
+      })
+    } else {
+      toast.success("PIN reset to 1234", {
+        description: "Ask the member to change it on their next sign-in.",
+      })
+    }
     setActionLoading(false)
   }
 
   async function setMemberGroup(memberId: string, group: string | null) {
     setActionLoading(true)
     const supabase = createBrowserClient()
-    await supabase
+    const { error } = await supabase
       .from("members")
       .update({ member_group: group })
       .eq("id", memberId)
 
+    if (error) {
+      toast.error("Couldn't update group", {
+        description: error.message,
+        action: { label: "Retry", onClick: () => setMemberGroup(memberId, group) },
+      })
+      setActionLoading(false)
+      return
+    }
+
+    toast.success(group ? `Set to ${group}` : "Group cleared")
     await loadMembers()
     if (selectedMember?.id === memberId) {
       setSelectedMember({ ...selectedMember, member_group: group })
@@ -163,12 +209,17 @@ export default function MembersPage() {
       // Delete the member
       await supabase.from("members").delete().eq("id", member.id)
 
+      toast.success(`${member.first_name} ${member.last_name} deleted`)
       setSelectedMember(null)
       setDeletingMember(false)
       await loadMembers()
     } catch (err) {
-      console.error("Delete error:", err)
-      alert("Failed to delete member. Please try again.")
+      const message =
+        err instanceof Error ? err.message : "Please try again."
+      toast.error("Couldn't delete member", {
+        description: message,
+        action: { label: "Retry", onClick: () => handleDeleteMember(member) },
+      })
     }
     setActionLoading(false)
   }
@@ -238,11 +289,7 @@ export default function MembersPage() {
   })
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading members...</div>
-      </div>
-    )
+    return <ListSkeleton rows={6} />
   }
 
   // Member detail view
@@ -603,6 +650,47 @@ export default function MembersPage() {
         searchKeys={["first_name", "last_name", "email", "contact_number"]}
         searchPlaceholder="Search members..."
         onRowClick={(item) => selectMember(item as unknown as Member)}
+        mobileCard={(item) => {
+          const m = item as unknown as Member
+          const initials = `${m.first_name?.[0] || ""}${m.last_name?.[0] || ""}`.toUpperCase()
+          return (
+            <div className="glass rounded-xl p-3 flex items-center gap-3 active:scale-[0.99] transition-transform">
+              <Avatar className="h-12 w-12 shrink-0">
+                {m.photo_url ? <AvatarImage src={m.photo_url} alt={m.first_name} /> : null}
+                <AvatarFallback className="bg-orange-500/10 text-orange-400 font-semibold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="font-medium text-foreground truncate">
+                    {m.first_name} {m.last_name}
+                  </p>
+                  {m.is_admin && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20 shrink-0">
+                      Admin
+                    </span>
+                  )}
+                  {m.is_youth_ya_core && !m.is_admin && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20 shrink-0">
+                      Core
+                    </span>
+                  )}
+                  {m.is_guest && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20 shrink-0">
+                      Guest
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{m.email}</p>
+                {m.contact_number && (
+                  <p className="text-xs text-muted-foreground/70">{m.contact_number}</p>
+                )}
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground/50 shrink-0" />
+            </div>
+          )
+        }}
       />
     </div>
   )

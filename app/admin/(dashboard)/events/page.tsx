@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { QrModal } from "@/components/admin/qr-modal"
+import { ListSkeleton } from "@/components/admin/list-skeleton"
 import {
   Plus,
   QrCode,
@@ -21,6 +22,7 @@ import {
   Calendar,
 } from "lucide-react"
 import { format } from "date-fns"
+import { toast } from "@/lib/toast"
 
 export default function EventsPage() {
   const { isSuperadmin } = useRole()
@@ -119,16 +121,20 @@ export default function EventsPage() {
       const { error } = await supabase.from("events").update(payload).eq("id", editingId)
       if (error) {
         setFormError("Failed to update event.")
+        toast.error("Couldn't update event", { description: error.message })
         setSaving(false)
         return
       }
+      toast.success("Event updated")
     } else {
       const { error } = await supabase.from("events").insert(payload)
       if (error) {
         setFormError("Failed to create event.")
+        toast.error("Couldn't create event", { description: error.message })
         setSaving(false)
         return
       }
+      toast.success("Event created")
     }
 
     setSaving(false)
@@ -139,18 +145,29 @@ export default function EventsPage() {
   async function handleDelete(id: string) {
     const supabase = createBrowserClient()
     // Delete attendance records first, then the event
-    await supabase.from("attendance").delete().eq("event_id", id)
-    await supabase.from("events").delete().eq("id", id)
+    const { error: attErr } = await supabase.from("attendance").delete().eq("event_id", id)
+    if (attErr) {
+      toast.error("Couldn't delete attendance records", {
+        description: attErr.message,
+        action: { label: "Retry", onClick: () => handleDelete(id) },
+      })
+      return
+    }
+    const { error: evtErr } = await supabase.from("events").delete().eq("id", id)
+    if (evtErr) {
+      toast.error("Couldn't delete event", {
+        description: evtErr.message,
+        action: { label: "Retry", onClick: () => handleDelete(id) },
+      })
+      return
+    }
+    toast.success("Event deleted")
     setDeletingId(null)
     loadEvents()
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading events...</div>
-      </div>
-    )
+    return <ListSkeleton rows={5} showSearch={false} />
   }
 
   return (
@@ -180,28 +197,37 @@ export default function EventsPage() {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-muted-foreground">Event Name *</Label>
+              <Label htmlFor="event-name" className="text-muted-foreground">
+                Event Name <span className="text-orange-400 font-bold">*</span>
+              </Label>
               <Input
+                id="event-name"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 placeholder="e.g. Sunday Youth Fellowship"
                 className="h-11"
+                required
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-muted-foreground">Date *</Label>
+              <Label htmlFor="event-date" className="text-muted-foreground">
+                Date <span className="text-orange-400 font-bold">*</span>
+              </Label>
               <Input
+                id="event-date"
                 type="date"
                 value={formDate}
                 onChange={(e) => setFormDate(e.target.value)}
                 className="h-11"
+                required
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-muted-foreground">Description</Label>
+            <Label htmlFor="event-description" className="text-muted-foreground">Description</Label>
             <Textarea
+              id="event-description"
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Optional description"
@@ -210,8 +236,10 @@ export default function EventsPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Switch checked={formActive} onCheckedChange={setFormActive} />
-            <Label className="text-sm text-foreground/80">Active (visible to attendees)</Label>
+            <Switch id="event-active" checked={formActive} onCheckedChange={setFormActive} />
+            <Label htmlFor="event-active" className="text-sm text-foreground/80 cursor-pointer">
+              Active (visible to attendees)
+            </Label>
           </div>
 
           {formError && (

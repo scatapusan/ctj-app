@@ -1,6 +1,7 @@
 "use client"
 
 import { Suspense, useState } from "react"
+import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import type { Member } from "@/lib/types"
 import { EventSelector } from "@/components/attend/event-selector"
@@ -12,7 +13,8 @@ import { PinEntry } from "@/components/attend/pin-entry"
 import { EditProfile } from "@/components/attend/edit-profile"
 import { SuccessScreen } from "@/components/attend/success-screen"
 import { ProfileEmailLookup } from "@/components/attend/profile-email-lookup"
-import { ArrowLeft, CheckCircle2, Sparkles, Pencil } from "lucide-react"
+import { StepIndicator, type AttendStage } from "@/components/attend/step-indicator"
+import { ArrowLeft, CheckCircle2, Sparkles, Pencil, Home, Loader2 } from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
@@ -161,6 +163,27 @@ function AttendPageContent() {
     step === "pin-entry" ||
     step === "edit-profile"
 
+  // Map internal flow steps → 4 visible stages for the StepIndicator
+  function currentStage(): AttendStage | null {
+    switch (step) {
+      case "select-event":
+        return "event"
+      case "email-input":
+        return "identify"
+      case "welcome-back":
+      case "registration":
+      case "guest-form":
+        return "confirm"
+      case "success":
+      case "already-checked-in":
+        return "done"
+      default:
+        // pin-entry, edit-profile, profile-email, profile-saved are off the check-in path
+        return null
+    }
+  }
+  const stage = currentStage()
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Animated background orbs */}
@@ -184,13 +207,16 @@ function AttendPageContent() {
           </p>
         </div>
 
+        {/* Step indicator (check-in flow only) */}
+        {stage && <StepIndicator current={stage} />}
+
         {/* Back button */}
         {showBack && (
           <Button
             variant="ghost"
             size="sm"
             onClick={handleBack}
-            className="text-muted-foreground hover:text-orange-400"
+            className="text-muted-foreground hover:text-orange-400 min-h-[44px]"
           >
             <ArrowLeft className="size-4 mr-1" />
             Back
@@ -346,6 +372,16 @@ function AttendPageContent() {
                 >
                   Check in another person
                 </Button>
+                <Link href="/" className="block">
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    className="w-full min-h-[44px] text-base text-muted-foreground/70 hover:text-orange-400"
+                  >
+                    <Home className="size-4 mr-2" />
+                    Back to Home
+                  </Button>
+                </Link>
               </div>
             </div>
           )}
@@ -367,8 +403,16 @@ export default function AttendPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        <div
+          className="min-h-screen bg-background flex items-center justify-center"
+          role="status"
+          aria-busy="true"
+          aria-label="Loading attendance"
+        >
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            <span className="text-sm">Loading attendance…</span>
+          </div>
         </div>
       }
     >

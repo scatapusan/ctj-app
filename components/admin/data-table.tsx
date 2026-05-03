@@ -20,6 +20,8 @@ interface DataTableProps<T> {
   pageSize?: number
   onRowClick?: (item: T) => void
   emptyMessage?: string
+  /** Render a card per item on mobile (<lg). Falls back to the table view if omitted. */
+  mobileCard?: (item: T) => React.ReactNode
 }
 
 export function DataTable<T extends Record<string, unknown>>({
@@ -30,6 +32,7 @@ export function DataTable<T extends Record<string, unknown>>({
   pageSize = 15,
   onRowClick,
   emptyMessage = "No data found.",
+  mobileCard,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
@@ -93,8 +96,29 @@ export function DataTable<T extends Record<string, unknown>>({
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
+      {/* Mobile card view */}
+      {mobileCard && (
+        <div className="lg:hidden space-y-3">
+          {paged.length === 0 ? (
+            <div className="rounded-xl border border-white/[0.06] px-4 py-8 text-center text-sm text-muted-foreground">
+              {emptyMessage}
+            </div>
+          ) : (
+            paged.map((item, i) => (
+              <div
+                key={i}
+                onClick={onRowClick ? () => onRowClick(item) : undefined}
+                className={onRowClick ? "cursor-pointer" : undefined}
+              >
+                {mobileCard(item)}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Table (desktop, or fallback when no mobileCard) */}
+      <div className={`overflow-x-auto rounded-xl border border-white/[0.06] ${mobileCard ? "hidden lg:block" : ""}`}>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/[0.06] bg-white/[0.02]">
@@ -164,16 +188,18 @@ export function DataTable<T extends Record<string, unknown>>({
           </span>
           <div className="flex gap-2">
             <Button
-              variant="ghost"
-              size="sm"
+              variant="outline"
+              aria-label="Previous page"
+              className="min-h-[44px] min-w-[44px]"
               disabled={page === 0}
               onClick={() => setPage(page - 1)}
             >
               <ChevronLeft className="size-4" />
             </Button>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="outline"
+              aria-label="Next page"
+              className="min-h-[44px] min-w-[44px]"
               disabled={page >= totalPages - 1}
               onClick={() => setPage(page + 1)}
             >
