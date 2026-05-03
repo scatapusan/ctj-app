@@ -1,14 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { createBrowserClient } from "@/lib/supabase"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Loader2, Lock, Mail, ShieldCheck } from "lucide-react"
-import { Suspense } from "react"
 
 function LoginForm() {
   const router = useRouter()
@@ -16,7 +14,7 @@ function LoginForm() {
   const errorParam = searchParams.get("error")
 
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [pin, setPin] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(
     errorParam === "not-admin" ? "You don't have admin access." : null
@@ -28,29 +26,15 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      const supabase = createBrowserClient()
-
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, pin }),
       })
+      const data = await res.json().catch(() => ({}))
 
-      if (authError) {
-        setError("Invalid email or password.")
-        setLoading(false)
-        return
-      }
-
-      // Check admin or core leader status
-      const { data: member } = await supabase
-        .from("members")
-        .select("is_admin, is_youth_ya_core")
-        .eq("email", email.trim().toLowerCase())
-        .maybeSingle()
-
-      if (!member?.is_admin && !member?.is_youth_ya_core) {
-        await supabase.auth.signOut()
-        setError("You don't have admin or core leader access.")
+      if (!res.ok) {
+        setError(data.error || "Sign-in failed.")
         setLoading(false)
         return
       }
@@ -87,12 +71,16 @@ function LoginForm() {
               <ShieldCheck className="size-8 text-orange-400" />
             </div>
             <h1 className="text-xl font-bold gradient-text">Admin Login</h1>
-            <p className="text-sm text-muted-foreground">CTJCC Marikina Dashboard</p>
+            <p className="text-sm text-muted-foreground">
+              CTJCC Marikina Dashboard
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="admin-email" className="text-muted-foreground">Email</Label>
+              <Label htmlFor="admin-email" className="text-muted-foreground">
+                Email
+              </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-orange-400/60" />
                 <Input
@@ -104,30 +92,44 @@ function LoginForm() {
                   className="h-12 pl-10 text-base"
                   autoComplete="email"
                   autoFocus
+                  required
                   disabled={loading}
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="admin-password" className="text-muted-foreground">Password</Label>
+              <Label htmlFor="admin-pin" className="text-muted-foreground">
+                PIN
+              </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-orange-400/60" />
                 <Input
-                  id="admin-password"
+                  id="admin-pin"
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="h-12 pl-10 text-base"
+                  inputMode="numeric"
+                  pattern="\d{4,8}"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="Enter your PIN"
+                  className="h-12 pl-10 text-base tracking-[0.3em] font-mono"
                   autoComplete="current-password"
+                  required
+                  minLength={4}
+                  maxLength={8}
                   disabled={loading}
                 />
               </div>
+              <p className="text-[11px] text-muted-foreground/70">
+                4–8 digits. Ask a superadmin if you don&apos;t have one yet.
+              </p>
             </div>
 
             {error && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+              <div
+                role="alert"
+                className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+              >
                 {error}
               </div>
             )}
@@ -137,7 +139,7 @@ function LoginForm() {
               variant="gradient"
               size="lg"
               className="w-full min-h-[48px] text-base font-semibold"
-              disabled={loading}
+              disabled={loading || !email || pin.length < 4}
             >
               {loading ? (
                 <>
