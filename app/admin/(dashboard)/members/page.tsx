@@ -6,6 +6,7 @@ import { useRole } from "@/components/admin/role-provider"
 import type { Member } from "@/lib/types"
 import { DataTable } from "@/components/admin/data-table"
 import { ListSkeleton } from "@/components/admin/list-skeleton"
+import { InviteMemberDialog } from "@/components/admin/invite-member-dialog"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -20,6 +21,7 @@ import {
   Trash2,
   Download,
   ChevronRight,
+  UserPlus,
 } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "@/lib/toast"
@@ -36,6 +38,7 @@ export default function MembersPage() {
   >([])
   const [actionLoading, setActionLoading] = useState(false)
   const [filter, setFilter] = useState<"all" | "admins" | "core" | "guests">("all")
+  const [inviteOpen, setInviteOpen] = useState(false)
 
   useEffect(() => {
     loadMembers()
@@ -570,12 +573,31 @@ export default function MembersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold gradient-text">Members</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {members.length} total members
-        </p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold gradient-text">Members</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {members.length} total members
+          </p>
+        </div>
+        {isSuperadmin && (
+          <Button
+            variant="gradient"
+            size="sm"
+            onClick={() => setInviteOpen(true)}
+            className="min-h-[44px]"
+          >
+            <UserPlus className="size-4 mr-2" />
+            Invite Member
+          </Button>
+        )}
       </div>
+
+      <InviteMemberDialog
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        onInvited={loadMembers}
+      />
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">

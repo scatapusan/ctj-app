@@ -1,57 +1,32 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { createServerClient } from "@supabase/ssr"
+import { decodeSession, SESSION_COOKIE } from "@/lib/admin-session"
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Only protect /admin routes (except /admin/login)
-  if (!pathname.startsWith("/admin") || pathname === "/admin/login") {
+  // Only protect /admin routes (except /admin/login and the login API itself)
+  if (
+    !pathname.startsWith("/admin") ||
+    pathname === "/admin/login" ||
+    pathname.startsWith("/api/admin/login") ||
+    pathname.startsWith("/api/admin/me") ||
+    pathname.startsWith("/api/admin/logout")
+  ) {
     return NextResponse.next()
   }
 
-  const response = NextResponse.next()
+  const token = request.cookies.get(SESSION_COOKIE)?.value
+  const session = decodeSession(token)
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
-          })
-        },
-      },
-    }
-  )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!session) {
     const loginUrl = new URL("/admin/login", request.url)
     return NextResponse.redirect(loginUrl)
   }
 
-  // Check if user is admin or core leader in members table
-  const { data: member } = await supabase
-    .from("members")
-    .select("is_admin, is_youth_ya_core")
-    .eq("email", user.email!)
-    .maybeSingle()
-
-  if (!member?.is_admin && !member?.is_youth_ya_core) {
-    const loginUrl = new URL("/admin/login", request.url)
-    loginUrl.searchParams.set("error", "not-admin")
-    return NextResponse.redirect(loginUrl)
-  }
-
-  return response
+  // Both 'admin' and 'core' roles are allowed past middleware.
+  // Per-action authorization (e.g., delete, invite) is enforced in the API handlers.
+  return NextResponse.next()
 }
 
 export const config = {
