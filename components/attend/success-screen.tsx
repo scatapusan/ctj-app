@@ -1,7 +1,8 @@
 "use client"
 
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, RotateCcw, Pencil } from "lucide-react"
+import { CheckCircle2, RotateCcw, Pencil, Home } from "lucide-react"
 
 interface SuccessScreenProps {
   firstName: string
@@ -11,7 +12,11 @@ interface SuccessScreenProps {
 
 export function SuccessScreen({ firstName, onReset, onEditProfile }: SuccessScreenProps) {
   return (
-    <div className="flex flex-col items-center justify-center text-center space-y-6 py-8 relative">
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex flex-col items-center justify-center text-center space-y-6 py-8 relative"
+    >
       {/* Subtle glow behind checkmark */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full bg-orange-500/10 blur-[60px] animate-pulse-glow" />
 
@@ -51,6 +56,17 @@ export function SuccessScreen({ firstName, onReset, onEditProfile }: SuccessScre
           <RotateCcw className="size-4 mr-2" />
           Check in another person
         </Button>
+
+        <Link href="/" className="block">
+          <Button
+            variant="ghost"
+            size="lg"
+            className="w-full min-h-[44px] text-base text-muted-foreground/70 hover:text-orange-400"
+          >
+            <Home className="size-4 mr-2" />
+            Back to Home
+          </Button>
+        </Link>
       </div>
     </div>
   )

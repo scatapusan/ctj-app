@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createBrowserClient } from "@/lib/supabase"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, Lock, Mail, ShieldCheck } from "lucide-react"
+import { ArrowLeft, Loader2, Lock, Mail, ShieldCheck } from "lucide-react"
 import { Suspense } from "react"
 
 function LoginForm() {
@@ -70,7 +71,15 @@ function LoginForm() {
         <div className="absolute top-1/3 -right-32 w-64 h-64 rounded-full bg-blue-500/[0.05] blur-[80px] animate-float-slow" />
       </div>
 
-      <div className="relative w-full max-w-sm mx-auto px-4">
+      <div className="relative w-full max-w-sm mx-auto px-4 space-y-3">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-orange-400 transition-colors"
+        >
+          <ArrowLeft className="size-4" />
+          Home
+        </Link>
+
         <div className="glass rounded-2xl p-8 space-y-6">
           {/* Header */}
           <div className="text-center space-y-3">
@@ -150,8 +159,16 @@ export default function AdminLoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        <div
+          className="min-h-screen bg-background flex items-center justify-center"
+          role="status"
+          aria-busy="true"
+          aria-label="Loading sign-in"
+        >
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            <span className="text-sm">Loading sign-in…</span>
+          </div>
         </div>
       }
     >

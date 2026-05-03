@@ -3,6 +3,7 @@
 import { useState, useRef } from "react"
 import { createBrowserClient, MEMBER_COLUMNS } from "@/lib/supabase"
 import { syncMember } from "@/lib/sync-sheets"
+import { toast } from "@/lib/toast"
 import { differenceInYears, parse } from "date-fns"
 import type { Member } from "@/lib/types"
 import { Input } from "@/components/ui/input"
@@ -197,6 +198,9 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
 
         if (uploadError) {
           console.error("Photo upload error:", uploadError)
+          toast.warning("Profile photo couldn't be uploaded", {
+            description: "Your other changes were saved — try the photo again later.",
+          })
         } else {
           const { data: urlData } = supabase.storage
             .from("member-photos")

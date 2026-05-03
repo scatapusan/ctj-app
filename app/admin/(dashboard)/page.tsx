@@ -4,10 +4,12 @@ import { useEffect, useState } from "react"
 import { createBrowserClient } from "@/lib/supabase"
 import { useRole } from "@/components/admin/role-provider"
 import { StatsCard } from "@/components/admin/stats-card"
+import { DashboardSkeleton } from "@/components/admin/dashboard-skeleton"
 import { Users, Calendar, ClipboardList, UserCheck, Sheet, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
+import { toast } from "@/lib/toast"
 
 interface RecentCheckIn {
   id: string
@@ -25,7 +27,6 @@ export default function AdminDashboard() {
   const [recent, setRecent] = useState<RecentCheckIn[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const [syncResult, setSyncResult] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -92,29 +93,31 @@ export default function AdminDashboard() {
 
   async function handleSyncSheets() {
     setSyncing(true)
-    setSyncResult(null)
     try {
       const res = await fetch("/api/sheets/export", { method: "POST" })
       const data = await res.json()
       if (data.ok) {
-        setSyncResult(`Synced ${data.exported.members} members and ${data.exported.attendance} attendance records`)
+        toast.success("Synced to Google Sheets", {
+          description: `${data.exported.members} members and ${data.exported.attendance} attendance records`,
+        })
       } else {
-        setSyncResult(`Error: ${data.error}`)
+        toast.error("Sync failed", {
+          description: data.error,
+          action: { label: "Retry", onClick: handleSyncSheets },
+        })
       }
     } catch {
-      setSyncResult("Network error. Please try again.")
+      toast.error("Network error", {
+        description: "Couldn't reach the server.",
+        action: { label: "Retry", onClick: handleSyncSheets },
+      })
     } finally {
       setSyncing(false)
-      setTimeout(() => setSyncResult(null), 5000)
     }
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   return (
@@ -173,16 +176,6 @@ export default function AdminDashboard() {
           </Button>
         )}
       </div>
-
-      {syncResult && (
-        <div className={`rounded-lg border p-3 text-sm ${
-          syncResult.startsWith("Error") || syncResult.startsWith("Network")
-            ? "border-red-500/20 bg-red-500/10 text-red-400"
-            : "border-orange-500/20 bg-orange-500/10 text-orange-400"
-        }`}>
-          {syncResult}
-        </div>
-      )}
 
       {/* Recent check-ins */}
       <div className="glass rounded-xl p-5 space-y-4">

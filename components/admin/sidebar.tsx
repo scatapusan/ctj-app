@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Sparkles,
+  Home,
 } from "lucide-react"
 
 const navItems = [
@@ -67,6 +68,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               onClick={() => setMobileOpen(false)}
+              aria-current={active ? "page" : undefined}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 active
                   ? "bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20"
@@ -80,8 +82,16 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Logout */}
-      <div className="px-3 pb-4">
+      {/* Footer actions */}
+      <div className="px-3 pb-4 space-y-1 border-t border-white/[0.04] pt-3">
+        <Link
+          href="/"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-orange-400 hover:bg-white/[0.04] transition-all duration-200 w-full"
+        >
+          <Home className="size-4" />
+          Back to site
+        </Link>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 w-full"
@@ -99,7 +109,9 @@ export function Sidebar() {
       <Button
         variant="ghost"
         size="sm"
-        className="fixed top-4 left-4 z-50 lg:hidden"
+        aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
+        aria-expanded={mobileOpen}
+        className="fixed top-3 left-3 z-50 lg:hidden min-h-[44px] min-w-[44px] glass border border-white/[0.06]"
         onClick={() => setMobileOpen(!mobileOpen)}
       >
         {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}

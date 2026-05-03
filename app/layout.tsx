@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Toaster } from "sonner";
 import { CookieBanner } from "@/components/cookie-banner";
 import "./globals.css";
 
@@ -31,6 +32,17 @@ export default function RootLayout({
       >
         {children}
         <CookieBanner />
+        <Toaster
+          position="top-center"
+          richColors
+          closeButton
+          theme="dark"
+          toastOptions={{
+            classNames: {
+              toast: "glass !border-white/[0.08]",
+            },
+          }}
+        />
       </body>
     </html>
   );

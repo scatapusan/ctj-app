@@ -105,3 +105,23 @@
 .animate-shake {
   animation: shake 0.4s ease-in-out;
 }
+
+/* Respect users who prefer reduced motion — disable decorative animations and tone down transitions */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-float-slow,
+  .animate-pulse-glow,
+  .animate-check-scale,
+  .animate-shake,
+  .animate-pulse,
+  .animate-spin {
+    animation: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
