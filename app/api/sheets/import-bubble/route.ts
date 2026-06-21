@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { exportAllToSheet } from "@/lib/google-sheets"
 import { MEMBER_COLUMNS } from "@/lib/supabase"
+import { readSession } from "@/lib/admin-session"
 
 interface BubbleUser {
   photo: string
@@ -137,6 +138,13 @@ function parseAttendances(csvText: string): BubbleAttendance[] {
 }
 
 export async function POST(request: Request) {
+  // Bulk import mass-inserts members/events/attendance and rewrites the sheet —
+  // strictly admin-only. (Also a one-time migration tool; consider removing in prod.)
+  const session = readSession()
+  if (!session || session.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   try {
     const formData = await request.formData()
     const usersFile = formData.get("users") as File | null

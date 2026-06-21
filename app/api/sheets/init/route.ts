@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
+import { readSession } from "@/lib/admin-session"
 
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
@@ -29,6 +30,12 @@ function getAuth() {
 }
 
 export async function POST() {
+  // Creating + sharing spreadsheets under the service account is admin-only.
+  const session = readSession()
+  if (!session || session.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   try {
     const auth = getAuth()
     const sheets = google.sheets({ version: "v4", auth })
@@ -65,15 +72,19 @@ export async function POST() {
       }),
     ])
 
-    // 3. Share with the owner so they can see it in their Drive
-    await drive.permissions.create({
-      fileId: newSheetId,
-      requestBody: {
-        type: "user",
-        role: "writer",
-        emailAddress: "samcataps@gmail.com",
-      },
-    })
+    // 3. Optionally share with the configured owner so they can see it in their Drive.
+    //    Set GOOGLE_SHEET_OWNER_EMAIL to enable; no personal email is hardcoded.
+    const ownerEmail = process.env.GOOGLE_SHEET_OWNER_EMAIL
+    if (ownerEmail) {
+      await drive.permissions.create({
+        fileId: newSheetId,
+        requestBody: {
+          type: "user",
+          role: "writer",
+          emailAddress: ownerEmail,
+        },
+      })
+    }
 
     return NextResponse.json({
       ok: true,
@@ -82,16 +93,8 @@ export async function POST() {
       message: "New sheet created with headers. Update GOOGLE_SHEET_ID in .env.local, then run Bubble import.",
     })
   } catch (err: unknown) {
+    // Log full diagnostics server-side only; never leak config/secrets to the client.
     console.error("Sheet init error:", err)
-    const gErr = err as { response?: { data?: unknown }; message?: string; code?: number }
-    return NextResponse.json(
-      {
-        error: "Failed to create sheet",
-        details: gErr.response?.data || gErr.message || String(err),
-        serviceAccount: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "NOT SET",
-        hasPrivateKey: !!process.env.GOOGLE_PRIVATE_KEY,
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Failed to create sheet" }, { status: 500 })
   }
 }

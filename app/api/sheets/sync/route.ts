@@ -2,8 +2,16 @@ import { NextResponse } from "next/server"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { syncMemberToSheet, syncAttendanceToSheet } from "@/lib/google-sheets"
 import { MEMBER_COLUMNS } from "@/lib/supabase"
+import { readSession } from "@/lib/admin-session"
 
 export async function POST(request: Request) {
+  // Sheets writes are admin-only. The public check-in flow no longer calls this
+  // directly; per-check-in sync moves into the authenticated server route (Batch 2).
+  const session = readSession()
+  if (!session || session.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   try {
     const body = await request.json()
     const { type, data } = body
