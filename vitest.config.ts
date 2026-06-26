@@ -6,6 +6,9 @@ export default defineConfig({
     environment: "node",
     globals: true,
     include: ["tests/**/*.test.ts"],
+    // DB-level tests boot an embedded PostgreSQL in beforeAll — give it room.
+    hookTimeout: 120000,
+    testTimeout: 30000,
   },
   resolve: {
     alias: {

@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { createBrowserClient } from "@/lib/supabase"
-import { syncMember, syncAttendance } from "@/lib/sync-sheets"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -42,43 +40,24 @@ export function GuestForm({ eventId, onSuccess }: GuestFormProps) {
     setError(null)
 
     try {
-      const supabase = createBrowserClient()
+      // Guest record creation + attendance + Sheets sync happen server-side.
+      const res = await fetch("/api/attend/guest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          contactNumber: contactNumber.trim(),
+          privacyConsent,
+        }),
+      })
 
-      // Create a guest record with a placeholder email (guest-timestamp@guest.local)
-      const guestEmail = `guest-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@guest.local`
-
-      const { data: newMember, error: memberError } = await supabase
-        .from("members")
-        .insert({
-          email: guestEmail,
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          contact_number: contactNumber.trim() || null,
-          is_guest: true,
-          privacy_consent_at: new Date().toISOString(),
-        })
-        .select("id")
-        .single()
-
-      if (memberError) {
+      if (!res.ok) {
         setError("Failed to register. Please try again.")
-        console.error(memberError)
         setLoading(false)
         return
       }
-
-      // Record attendance
-      const { error: attendError } = await supabase
-        .from("attendance")
-        .insert({ member_id: newMember.id, event_id: eventId })
-
-      if (attendError) {
-        console.error("Attendance error:", attendError)
-      }
-
-      // Sync to Google Sheets (fire-and-forget)
-      syncMember(newMember.id)
-      syncAttendance(newMember.id, eventId)
 
       onSuccess(firstName.trim())
     } catch {

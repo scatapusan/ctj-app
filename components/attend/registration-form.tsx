@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react"
 import { createBrowserClient } from "@/lib/supabase"
-import { syncMember, syncAttendance } from "@/lib/sync-sheets"
 import { toast } from "@/lib/toast"
 import { differenceInYears, parse } from "date-fns"
 import { Input } from "@/components/ui/input"
@@ -56,7 +55,6 @@ export function RegistrationForm({
   const [ministryInvolvements, setMinistryInvolvements] = useState("")
 
   // Toggles
-  const [isYouthYaCore, setIsYouthYaCore] = useState(false)
   const [completedReach, setCompletedReach] = useState(false)
   const [completedFreshStart, setCompletedFreshStart] = useState(false)
   const [completedFreedomDay, setCompletedFreedomDay] = useState(false)
@@ -144,66 +142,57 @@ export function RegistrationForm({
         }
       }
 
-      const { data: newMember, error: memberError } = await supabase
-        .from("members")
-        .insert({
+      // Member creation, atomic first check-in, and Google Sheets sync now run
+      // server-side (service role). Privilege flags are never sent/accepted.
+      const res = await fetch("/api/attend/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId,
           email,
-          first_name: firstName.trim(),
-          middle_name: middleName.trim() || null,
-          last_name: lastName.trim(),
-          birthdate: birthdate || null,
-          contact_number: contactNumber.trim() || null,
-          facebook_link: facebookLink.trim() || null,
-          address: address.trim() || null,
-          photo_url: photoUrl,
-          discipler_name: disciplerName.trim() || null,
-          disciples: disciples.trim() || null,
-          prospect_disciples: prospectDisciples.trim() || null,
-          lifeline_leader: lifelineLeader.trim() || null,
-          lifeline_co_leaders: lifelineCoLeaders.trim() || null,
-          lifeline_members: lifelineMembers.trim() || null,
-          ministry_involvements: ministryInvolvements.trim() || null,
-          is_youth_ya_core: isYouthYaCore,
-          completed_reach: completedReach,
-          completed_fresh_start: completedFreshStart,
-          completed_freedom_day: completedFreedomDay,
-          completed_grand_day: completedGrandDay,
-          nickname: nickname.trim() || null,
-          gender: gender || null,
-          father_name: fatherName.trim() || null,
-          mother_name: motherName.trim() || null,
-          emergency_contact_name: emergencyContactName.trim() || null,
-          emergency_contact_number: emergencyContactNumber.trim() || null,
-          occupation: occupation.trim() || null,
-          baptized_in_water: baptizedInWater,
-          privacy_consent_at: new Date().toISOString(),
-          ...(pin.length === 4 ? { pin } : {}),
-        })
-        .select("id")
-        .single()
+          privacyConsent,
+          member: {
+            first_name: firstName.trim(),
+            middle_name: middleName.trim() || null,
+            last_name: lastName.trim(),
+            nickname: nickname.trim() || null,
+            gender: gender || null,
+            birthdate: birthdate || null,
+            contact_number: contactNumber.trim() || null,
+            facebook_link: facebookLink.trim() || null,
+            address: address.trim() || null,
+            occupation: occupation.trim() || null,
+            father_name: fatherName.trim() || null,
+            mother_name: motherName.trim() || null,
+            emergency_contact_name: emergencyContactName.trim() || null,
+            emergency_contact_number: emergencyContactNumber.trim() || null,
+            discipler_name: disciplerName.trim() || null,
+            disciples: disciples.trim() || null,
+            prospect_disciples: prospectDisciples.trim() || null,
+            lifeline_leader: lifelineLeader.trim() || null,
+            lifeline_co_leaders: lifelineCoLeaders.trim() || null,
+            lifeline_members: lifelineMembers.trim() || null,
+            ministry_involvements: ministryInvolvements.trim() || null,
+            completed_reach: completedReach,
+            completed_fresh_start: completedFreshStart,
+            completed_freedom_day: completedFreedomDay,
+            completed_grand_day: completedGrandDay,
+            baptized_in_water: baptizedInWater,
+            photo_url: photoUrl,
+            ...(pin.length === 4 ? { pin } : {}),
+          },
+        }),
+      })
 
-      if (memberError) {
-        if (memberError.code === "23505") {
+      if (!res.ok) {
+        if (res.status === 409) {
           setError("This email is already registered. Go back and try again.")
         } else {
           setError("Failed to register. Please try again.")
-          console.error(memberError)
         }
         setLoading(false)
         return
       }
-
-      const { error: attendError } = await supabase
-        .from("attendance")
-        .insert({ member_id: newMember.id, event_id: eventId })
-
-      if (attendError) {
-        console.error("Attendance error:", attendError)
-      }
-
-      // Sync to Google Sheets (fire-and-forget)
-      syncMember(newMember.id)
-      syncAttendance(newMember.id, eventId)
 
       onSuccess(firstName.trim())
     } catch {
@@ -578,14 +567,6 @@ export function RegistrationForm({
         <SectionHeader>Status</SectionHeader>
 
         <div className="space-y-3">
-          <ToggleRow
-            label="Youth / YA Core"
-            checked={isYouthYaCore}
-            onCheckedChange={setIsYouthYaCore}
-          />
-
-          <div className="h-px bg-white/[0.06]" />
-
           <p className="text-xs text-orange-400/70 font-medium uppercase tracking-wider">
             Completed Seminars
           </p>

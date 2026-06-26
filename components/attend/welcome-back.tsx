@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { createBrowserClient } from "@/lib/supabase"
-import { syncMember, syncAttendance } from "@/lib/sync-sheets"
 import type { Member } from "@/lib/types"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -27,25 +25,19 @@ export function WelcomeBack({ member, eventId, onSuccess, onEditProfile }: Welco
     setError(null)
 
     try {
-      const supabase = createBrowserClient()
-      const { error: insertError } = await supabase
-        .from("attendance")
-        .insert({ member_id: member.id, event_id: eventId })
+      // Check-in + Google Sheets sync now happen server-side (service role).
+      // A repeat check-in is treated as success by the route.
+      const res = await fetch("/api/attend/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId, memberId: member.id }),
+      })
 
-      if (insertError) {
-        if (insertError.code === "23505") {
-          onSuccess()
-          return
-        }
+      if (!res.ok) {
         setError("Failed to record attendance. Please try again.")
-        console.error(insertError)
         setLoading(false)
         return
       }
-
-      // Sync to Google Sheets (fire-and-forget)
-      syncMember(member.id)
-      syncAttendance(member.id, eventId)
 
       onSuccess()
     } catch {
