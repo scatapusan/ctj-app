@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserClient, MEMBER_COLUMNS } from "@/lib/supabase"
 import { useRole } from "@/components/admin/role-provider"
 import type { Member } from "@/lib/types"
 import { DataTable } from "@/components/admin/data-table"
@@ -45,71 +44,53 @@ export default function MembersPage() {
   }, [])
 
   async function loadMembers() {
-    const supabase = createBrowserClient()
-    const { data } = await supabase
-      .from("members")
-      .select(MEMBER_COLUMNS)
-      .order("created_at", { ascending: false })
-
-    if (data) setMembers(data as Member[])
-    setLoading(false)
+    try {
+      const res = await fetch("/api/admin/members")
+      if (res.ok) {
+        const data = await res.json()
+        setMembers(data.members as Member[])
+      }
+    } catch {
+      // leave existing on error
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function selectMember(member: Member) {
     setSelectedMember(member)
-
-    // Load attendance history
-    const supabase = createBrowserClient()
-    const { data: attendanceData } = await supabase
-      .from("attendance")
-      .select("id, checked_in_at, event_id")
-      .eq("member_id", member.id)
-      .order("checked_in_at", { ascending: false })
-      .limit(50)
-
-    if (attendanceData && attendanceData.length > 0) {
-      const eventIds = Array.from(new Set(attendanceData.map((a) => a.event_id)))
-      const { data: eventsData } = await supabase
-        .from("events")
-        .select("id, name")
-        .in("id", eventIds)
-
-      const eventMap = new Map(
-        (eventsData || []).map((e) => [e.id, e.name])
-      )
-
-      setAttendanceHistory(
-        attendanceData.map((a) => ({
-          id: a.id,
-          event_name: eventMap.get(a.event_id) || "Unknown Event",
-          checked_in_at: a.checked_in_at,
-        }))
-      )
-    } else {
+    try {
+      const res = await fetch(`/api/admin/members/${member.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSelectedMember(data.member as Member)
+        setAttendanceHistory(data.attendanceHistory)
+      } else {
+        setAttendanceHistory([])
+      }
+    } catch {
       setAttendanceHistory([])
     }
   }
 
+  async function patchMember(memberId: string, body: Record<string, unknown>): Promise<boolean> {
+    const res = await fetch(`/api/admin/members/${memberId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+    return res.ok
+  }
+
   async function toggleAdmin(member: Member) {
     setActionLoading(true)
-    const supabase = createBrowserClient()
-    const { error } = await supabase
-      .from("members")
-      .update({ is_admin: !member.is_admin })
-      .eq("id", member.id)
-
-    if (error) {
-      toast.error("Couldn't update admin status", {
-        description: error.message,
-        action: { label: "Retry", onClick: () => toggleAdmin(member) },
-      })
+    const ok = await patchMember(member.id, { action: "toggleAdmin", value: !member.is_admin }).catch(() => false)
+    if (!ok) {
+      toast.error("Couldn't update admin status", { action: { label: "Retry", onClick: () => toggleAdmin(member) } })
       setActionLoading(false)
       return
     }
-
-    toast.success(
-      member.is_admin ? "Admin access removed" : "Admin access granted"
-    )
+    toast.success(member.is_admin ? "Admin access removed" : "Admin access granted")
     await loadMembers()
     if (selectedMember?.id === member.id) {
       setSelectedMember({ ...member, is_admin: !member.is_admin })
@@ -119,24 +100,13 @@ export default function MembersPage() {
 
   async function toggleCore(member: Member) {
     setActionLoading(true)
-    const supabase = createBrowserClient()
-    const { error } = await supabase
-      .from("members")
-      .update({ is_youth_ya_core: !member.is_youth_ya_core })
-      .eq("id", member.id)
-
-    if (error) {
-      toast.error("Couldn't update core status", {
-        description: error.message,
-        action: { label: "Retry", onClick: () => toggleCore(member) },
-      })
+    const ok = await patchMember(member.id, { action: "toggleCore", value: !member.is_youth_ya_core }).catch(() => false)
+    if (!ok) {
+      toast.error("Couldn't update core status", { action: { label: "Retry", onClick: () => toggleCore(member) } })
       setActionLoading(false)
       return
     }
-
-    toast.success(
-      member.is_youth_ya_core ? "Core access removed" : "Core access granted"
-    )
+    toast.success(member.is_youth_ya_core ? "Core access removed" : "Core access granted")
     await loadMembers()
     if (selectedMember?.id === member.id) {
       setSelectedMember({ ...member, is_youth_ya_core: !member.is_youth_ya_core })
@@ -146,17 +116,9 @@ export default function MembersPage() {
 
   async function resetPin(memberId: string) {
     setActionLoading(true)
-    const supabase = createBrowserClient()
-    const { error } = await supabase
-      .from("members")
-      .update({ pin: "1234" })
-      .eq("id", memberId)
-
-    if (error) {
-      toast.error("Couldn't reset PIN", {
-        description: error.message,
-        action: { label: "Retry", onClick: () => resetPin(memberId) },
-      })
+    const ok = await patchMember(memberId, { action: "resetPin" }).catch(() => false)
+    if (!ok) {
+      toast.error("Couldn't reset PIN", { action: { label: "Retry", onClick: () => resetPin(memberId) } })
     } else {
       toast.success("PIN reset to 1234", {
         description: "Ask the member to change it on their next sign-in.",
@@ -167,21 +129,12 @@ export default function MembersPage() {
 
   async function setMemberGroup(memberId: string, group: string | null) {
     setActionLoading(true)
-    const supabase = createBrowserClient()
-    const { error } = await supabase
-      .from("members")
-      .update({ member_group: group })
-      .eq("id", memberId)
-
-    if (error) {
-      toast.error("Couldn't update group", {
-        description: error.message,
-        action: { label: "Retry", onClick: () => setMemberGroup(memberId, group) },
-      })
+    const ok = await patchMember(memberId, { action: "setGroup", group }).catch(() => false)
+    if (!ok) {
+      toast.error("Couldn't update group", { action: { label: "Retry", onClick: () => setMemberGroup(memberId, group) } })
       setActionLoading(false)
       return
     }
-
     toast.success(group ? `Set to ${group}` : "Group cleared")
     await loadMembers()
     if (selectedMember?.id === memberId) {
@@ -194,33 +147,22 @@ export default function MembersPage() {
 
   async function handleDeleteMember(member: Member) {
     setActionLoading(true)
+    // Attendance cascades via the FK; the photo is removed server-side.
     try {
-      const supabase = createBrowserClient()
-
-      // Delete attendance records first
-      await supabase.from("attendance").delete().eq("member_id", member.id)
-
-      // Delete photo from storage if exists
-      if (member.photo_url) {
-        const parts = member.photo_url.split("/")
-        const fileName = parts[parts.length - 1]
-        if (fileName && !fileName.startsWith("http")) {
-          await supabase.storage.from("member-photos").remove([fileName])
-        }
+      const res = await fetch(`/api/admin/members/${member.id}`, { method: "DELETE" })
+      if (!res.ok) {
+        toast.error("Couldn't delete member", {
+          action: { label: "Retry", onClick: () => handleDeleteMember(member) },
+        })
+        setActionLoading(false)
+        return
       }
-
-      // Delete the member
-      await supabase.from("members").delete().eq("id", member.id)
-
       toast.success(`${member.first_name} ${member.last_name} deleted`)
       setSelectedMember(null)
       setDeletingMember(false)
       await loadMembers()
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Please try again."
+    } catch {
       toast.error("Couldn't delete member", {
-        description: message,
         action: { label: "Retry", onClick: () => handleDeleteMember(member) },
       })
     }

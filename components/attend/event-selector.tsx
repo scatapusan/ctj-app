@@ -19,7 +19,7 @@ interface EventSelectorProps {
 }
 
 export function EventSelector({ onSelect }: EventSelectorProps) {
-  const [events, setEvents] = useState<Event[]>([])
+  const [events, setEvents] = useState<Pick<Event, "id" | "name" | "event_date" | "is_active">[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
@@ -27,9 +27,11 @@ export function EventSelector({ onSelect }: EventSelectorProps) {
   useEffect(() => {
     async function fetchEvents() {
       const supabase = createBrowserClient()
+      // Only non-sensitive, anon-readable columns (description is excluded by
+      // the RLS lockdown's column grant).
       const { data, error } = await supabase
         .from("events")
-        .select("*")
+        .select("id, name, event_date, is_active")
         .eq("is_active", true)
         .order("event_date", { ascending: false })
 

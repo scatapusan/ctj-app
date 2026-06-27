@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserClient } from "@/lib/supabase"
 import { useRole } from "@/components/admin/role-provider"
 import type { Event } from "@/lib/types"
 import { Button } from "@/components/ui/button"
@@ -52,28 +51,17 @@ export default function EventsPage() {
   }, [])
 
   async function loadEvents() {
-    const supabase = createBrowserClient()
-
-    const { data: eventsData } = await supabase
-      .from("events")
-      .select("*")
-      .order("event_date", { ascending: false })
-
-    if (eventsData) {
-      // Get attendance counts
-      const eventsWithCounts = await Promise.all(
-        eventsData.map(async (event) => {
-          const { count } = await supabase
-            .from("attendance")
-            .select("id", { count: "exact", head: true })
-            .eq("event_id", event.id)
-          return { ...event, attendance_count: count ?? 0 }
-        })
-      )
-      setEvents(eventsWithCounts)
+    try {
+      const res = await fetch("/api/admin/events")
+      if (res.ok) {
+        const data = await res.json()
+        setEvents(data.events)
+      }
+    } catch {
+      // leave existing on error
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   function openCreate() {
@@ -108,7 +96,6 @@ export default function EventsPage() {
 
     setSaving(true)
     setFormError(null)
-    const supabase = createBrowserClient()
 
     const payload = {
       name: formName.trim(),
@@ -117,24 +104,30 @@ export default function EventsPage() {
       is_active: formActive,
     }
 
-    if (editingId) {
-      const { error } = await supabase.from("events").update(payload).eq("id", editingId)
-      if (error) {
-        setFormError("Failed to update event.")
-        toast.error("Couldn't update event", { description: error.message })
+    try {
+      const res = editingId
+        ? await fetch(`/api/admin/events/${editingId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+        : await fetch("/api/admin/events", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+
+      if (!res.ok) {
+        setFormError(editingId ? "Failed to update event." : "Failed to create event.")
+        toast.error(editingId ? "Couldn't update event" : "Couldn't create event")
         setSaving(false)
         return
       }
-      toast.success("Event updated")
-    } else {
-      const { error } = await supabase.from("events").insert(payload)
-      if (error) {
-        setFormError("Failed to create event.")
-        toast.error("Couldn't create event", { description: error.message })
-        setSaving(false)
-        return
-      }
-      toast.success("Event created")
+      toast.success(editingId ? "Event updated" : "Event created")
+    } catch {
+      setFormError("Network error. Please try again.")
+      setSaving(false)
+      return
     }
 
     setSaving(false)
@@ -143,20 +136,17 @@ export default function EventsPage() {
   }
 
   async function handleDelete(id: string) {
-    const supabase = createBrowserClient()
-    // Delete attendance records first, then the event
-    const { error: attErr } = await supabase.from("attendance").delete().eq("event_id", id)
-    if (attErr) {
-      toast.error("Couldn't delete attendance records", {
-        description: attErr.message,
-        action: { label: "Retry", onClick: () => handleDelete(id) },
-      })
-      return
-    }
-    const { error: evtErr } = await supabase.from("events").delete().eq("id", id)
-    if (evtErr) {
-      toast.error("Couldn't delete event", {
-        description: evtErr.message,
+    // Attendance rows cascade via the FK (attendance_event_id_fkey ON DELETE CASCADE).
+    try {
+      const res = await fetch(`/api/admin/events/${id}`, { method: "DELETE" })
+      if (!res.ok) {
+        toast.error("Couldn't delete event", {
+          action: { label: "Retry", onClick: () => handleDelete(id) },
+        })
+        return
+      }
+    } catch {
+      toast.error("Network error", {
         action: { label: "Retry", onClick: () => handleDelete(id) },
       })
       return
@@ -177,10 +167,12 @@ export default function EventsPage() {
           <h1 className="text-2xl font-bold gradient-text">Events</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage events and generate QR codes</p>
         </div>
-        <Button variant="gradient" onClick={openCreate}>
-          <Plus className="size-4 mr-2" />
-          Create Event
-        </Button>
+        {isSuperadmin && (
+          <Button variant="gradient" onClick={openCreate}>
+            <Plus className="size-4 mr-2" />
+            Create Event
+          </Button>
+        )}
       </div>
 
       {/* Create/Edit Form */}
@@ -305,14 +297,16 @@ export default function EventsPage() {
                 >
                   <QrCode className="size-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => openEdit(event)}
-                  title="Edit"
-                >
-                  <Pencil className="size-4" />
-                </Button>
+                {isSuperadmin && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEdit(event)}
+                    title="Edit"
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
+                )}
 
                 {isSuperadmin && (
                   deletingId === event.id ? (
