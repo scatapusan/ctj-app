@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import type { Member } from "@/lib/types"
+import type { Member, MemberSummary } from "@/lib/types"
 import { EventSelector } from "@/components/attend/event-selector"
 import { EmailLookup } from "@/components/attend/email-lookup"
 import { WelcomeBack } from "@/components/attend/welcome-back"
@@ -39,7 +39,11 @@ function AttendPageContent() {
     eventParam ? "email-input" : "select-event"
   )
   const [eventId, setEventId] = useState<string>(eventParam || "")
-  const [member, setMember] = useState<Member | null>(null)
+  // `member` is the minimal summary for pre-edit screens; `editMember` is the
+  // full PII record, fetched only after the PIN. `editPin` re-authorizes saves.
+  const [member, setMember] = useState<MemberSummary | null>(null)
+  const [editMember, setEditMember] = useState<Member | null>(null)
+  const [editPin, setEditPin] = useState("")
   const [email, setEmail] = useState("")
   const [firstName, setFirstName] = useState("")
   const [returnToStep, setReturnToStep] = useState<FlowStep>("welcome-back")
@@ -49,7 +53,7 @@ function AttendPageContent() {
     setStep("email-input")
   }
 
-  function handleMemberFound(m: Member) {
+  function handleMemberFound(m: MemberSummary) {
     setMember(m)
     setFirstName(m.first_name)
     setStep("welcome-back")
@@ -73,14 +77,14 @@ function AttendPageContent() {
     setStep("profile-email")
   }
 
-  function handleProfileMemberFound(m: Member) {
+  function handleProfileMemberFound(m: MemberSummary) {
     setMember(m)
     setFirstName(m.first_name)
     setReturnToStep("profile-saved")
     setStep("pin-entry")
   }
 
-  function handleAlreadyCheckedIn(m: Member) {
+  function handleAlreadyCheckedIn(m: MemberSummary) {
     setMember(m)
     setFirstName(m.first_name)
     setStep("already-checked-in")
@@ -100,7 +104,10 @@ function AttendPageContent() {
     setStep("pin-entry")
   }
 
-  function handlePinVerified() {
+  function handlePinVerified(full: Member, pin: string) {
+    setEditMember(full)
+    setEditPin(pin)
+    setFirstName(full.first_name)
     setStep("edit-profile")
   }
 
@@ -109,7 +116,17 @@ function AttendPageContent() {
   }
 
   function handleProfileSaved(updatedMember: Member) {
-    setMember(updatedMember)
+    setEditMember(updatedMember)
+    setMember((prev) =>
+      prev
+        ? {
+            ...prev,
+            first_name: updatedMember.first_name,
+            last_name: updatedMember.last_name,
+            photo_url: updatedMember.photo_url,
+          }
+        : prev,
+    )
     setFirstName(updatedMember.first_name)
     if (returnToStep === "profile-saved") {
       setStep("profile-saved")
@@ -124,6 +141,8 @@ function AttendPageContent() {
 
   function handleReset() {
     setMember(null)
+    setEditMember(null)
+    setEditPin("")
     setEmail("")
     setFirstName("")
     setStep("email-input")
@@ -149,6 +168,8 @@ function AttendPageContent() {
 
   function handleProfileReset() {
     setMember(null)
+    setEditMember(null)
+    setEditPin("")
     setEmail("")
     setFirstName("")
     setStep("select-event")
@@ -294,9 +315,10 @@ function AttendPageContent() {
             />
           )}
 
-          {step === "edit-profile" && member && (
+          {step === "edit-profile" && editMember && (
             <EditProfile
-              member={member}
+              member={editMember}
+              pin={editPin}
               onSaved={handleProfileSaved}
               onCancel={handleEditCancel}
             />

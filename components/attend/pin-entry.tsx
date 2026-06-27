@@ -1,13 +1,13 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { createBrowserClient } from "@/lib/supabase"
+import type { Member } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Loader2, Lock, ShieldCheck } from "lucide-react"
 
 interface PinEntryProps {
   memberId: string
-  onVerified: () => void
+  onVerified: (member: Member, pin: string) => void
   onCancel: () => void
 }
 
@@ -74,29 +74,32 @@ export function PinEntry({ memberId, onVerified, onCancel }: PinEntryProps) {
     setError(null)
 
     try {
-      const supabase = createBrowserClient()
-      const { data, error: rpcError } = await supabase.rpc("verify_pin", {
-        p_member_id: memberId,
-        p_pin: pinCode,
+      // The server verifies the PIN and returns the full profile in one step,
+      // so the full PII record is only fetched after a correct PIN.
+      const res = await fetch("/api/attend/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId, pin: pinCode }),
       })
 
-      if (rpcError) {
-        setError("Something went wrong. Please try again.")
-        console.error(rpcError)
+      if (res.ok) {
+        const data = await res.json()
+        onVerified(data.member as Member, pinCode)
+        return
+      }
+
+      if (res.status === 429) {
+        setError("Too many attempts. Please wait a moment.")
         setLoading(false)
         return
       }
 
-      if (data === true) {
-        onVerified()
-      } else {
-        setError("Incorrect PIN. Try again.")
-        setShake(true)
-        setTimeout(() => setShake(false), 500)
-        setDigits(["", "", "", ""])
-        setTimeout(() => inputRefs.current[0]?.focus(), 100)
-        setLoading(false)
-      }
+      setError(res.status === 401 ? "Incorrect PIN. Try again." : "Something went wrong. Please try again.")
+      setShake(true)
+      setTimeout(() => setShake(false), 500)
+      setDigits(["", "", "", ""])
+      setTimeout(() => inputRefs.current[0]?.focus(), 100)
+      setLoading(false)
     } catch {
       setError("Network error. Please check your connection.")
       setLoading(false)

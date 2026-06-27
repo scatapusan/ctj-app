@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { createBrowserClient, MEMBER_COLUMNS } from "@/lib/supabase"
-import { syncMember } from "@/lib/sync-sheets"
+import { createBrowserClient } from "@/lib/supabase"
 import { toast } from "@/lib/toast"
 import { differenceInYears, parse } from "date-fns"
 import type { Member } from "@/lib/types"
@@ -16,11 +15,13 @@ import { Loader2, Camera, X, Save, Lock } from "lucide-react"
 
 interface EditProfileProps {
   member: Member
+  /** The PIN the member just verified — re-sent to authorize the save. */
+  pin: string
   onSaved: (updatedMember: Member) => void
   onCancel: () => void
 }
 
-export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
+export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Pre-filled state
@@ -51,7 +52,6 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
   const [ministryInvolvements, setMinistryInvolvements] = useState(member.ministry_involvements || "")
 
   // Toggles
-  const [isYouthYaCore, setIsYouthYaCore] = useState(member.is_youth_ya_core)
   const [completedReach, setCompletedReach] = useState(member.completed_reach)
   const [completedFreshStart, setCompletedFreshStart] = useState(member.completed_fresh_start)
   const [completedFreedomDay, setCompletedFreedomDay] = useState(member.completed_freedom_day)
@@ -132,33 +132,18 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
     setPinLoading(true)
 
     try {
-      const supabase = createBrowserClient()
-
-      // Verify current PIN first
-      const { data: valid, error: rpcError } = await supabase.rpc("verify_pin", {
-        p_member_id: member.id,
-        p_pin: currentPin,
+      const res = await fetch("/api/attend/change-pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: member.id, currentPin, newPin }),
       })
 
-      if (rpcError) {
-        setPinError("Something went wrong. Please try again.")
-        setPinLoading(false)
-        return
-      }
-
-      if (!valid) {
+      if (res.status === 401) {
         setPinError("Current PIN is incorrect.")
         setPinLoading(false)
         return
       }
-
-      // Update the PIN
-      const { error: updateError } = await supabase
-        .from("members")
-        .update({ pin: newPin })
-        .eq("id", member.id)
-
-      if (updateError) {
+      if (!res.ok) {
         setPinError("Failed to update PIN. Please try again.")
         setPinLoading(false)
         return
@@ -212,56 +197,58 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
         photoUrl = null
       }
 
-      const updateData = {
-        first_name: firstName.trim(),
-        middle_name: middleName.trim() || null,
-        last_name: lastName.trim(),
-        birthdate: birthdate || null,
-        contact_number: contactNumber.trim() || null,
-        facebook_link: facebookLink.trim() || null,
-        address: address.trim() || null,
-        photo_url: photoUrl,
-        discipler_name: disciplerName.trim() || null,
-        disciples: disciples.trim() || null,
-        prospect_disciples: prospectDisciples.trim() || null,
-        lifeline_leader: lifelineLeader.trim() || null,
-        lifeline_co_leaders: lifelineCoLeaders.trim() || null,
-        lifeline_members: lifelineMembers.trim() || null,
-        ministry_involvements: ministryInvolvements.trim() || null,
-        is_youth_ya_core: isYouthYaCore,
-        completed_reach: completedReach,
-        completed_fresh_start: completedFreshStart,
-        completed_freedom_day: completedFreedomDay,
-        completed_grand_day: completedGrandDay,
-        nickname: nickname.trim() || null,
-        gender: gender || null,
-        father_name: fatherName.trim() || null,
-        mother_name: motherName.trim() || null,
-        emergency_contact_name: emergencyContactName.trim() || null,
-        emergency_contact_number: emergencyContactNumber.trim() || null,
-        occupation: occupation.trim() || null,
-        baptized_in_water: baptizedInWater,
-        updated_at: new Date().toISOString(),
+      // Save + Google Sheets sync happen server-side, re-authorized by the PIN.
+      const res = await fetch("/api/attend/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          memberId: member.id,
+          pin,
+          member: {
+            first_name: firstName.trim(),
+            middle_name: middleName.trim() || null,
+            last_name: lastName.trim(),
+            nickname: nickname.trim() || null,
+            gender: gender || null,
+            birthdate: birthdate || null,
+            contact_number: contactNumber.trim() || null,
+            facebook_link: facebookLink.trim() || null,
+            address: address.trim() || null,
+            occupation: occupation.trim() || null,
+            father_name: fatherName.trim() || null,
+            mother_name: motherName.trim() || null,
+            emergency_contact_name: emergencyContactName.trim() || null,
+            emergency_contact_number: emergencyContactNumber.trim() || null,
+            discipler_name: disciplerName.trim() || null,
+            disciples: disciples.trim() || null,
+            prospect_disciples: prospectDisciples.trim() || null,
+            lifeline_leader: lifelineLeader.trim() || null,
+            lifeline_co_leaders: lifelineCoLeaders.trim() || null,
+            lifeline_members: lifelineMembers.trim() || null,
+            ministry_involvements: ministryInvolvements.trim() || null,
+            completed_reach: completedReach,
+            completed_fresh_start: completedFreshStart,
+            completed_freedom_day: completedFreedomDay,
+            completed_grand_day: completedGrandDay,
+            baptized_in_water: baptizedInWater,
+            photo_url: photoUrl,
+          },
+        }),
+      })
+
+      if (res.status === 401) {
+        setError("Your PIN session expired. Please go back and re-enter your PIN.")
+        setLoading(false)
+        return
       }
-
-      const { data: updated, error: updateError } = await supabase
-        .from("members")
-        .update(updateData)
-        .eq("id", member.id)
-        .select(MEMBER_COLUMNS)
-        .single()
-
-      if (updateError) {
+      if (!res.ok) {
         setError("Failed to update profile. Please try again.")
-        console.error(updateError)
         setLoading(false)
         return
       }
 
-      // Sync to Google Sheets (fire-and-forget)
-      syncMember(member.id)
-
-      onSaved(updated as Member)
+      const data = await res.json()
+      onSaved(data.member as Member)
     } catch {
       setError("Network error. Please check your connection.")
       setLoading(false)
@@ -636,10 +623,6 @@ export function EditProfile({ member, onSaved, onCancel }: EditProfileProps) {
         <SectionHeader>Status</SectionHeader>
 
         <div className="space-y-3">
-          <ToggleRow label="Youth / YA Core" checked={isYouthYaCore} onCheckedChange={setIsYouthYaCore} />
-
-          <div className="h-px bg-white/[0.06]" />
-
           <p className="text-xs text-orange-400/70 font-medium uppercase tracking-wider">
             Completed Seminars
           </p>

@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import type { Member } from "@/lib/types"
+import type { MemberSummary } from "@/lib/types"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Loader2, HandMetal, Pencil } from "lucide-react"
 
 interface WelcomeBackProps {
-  member: Member
+  member: MemberSummary
   eventId: string
   onSuccess: () => void
   onEditProfile: () => void
