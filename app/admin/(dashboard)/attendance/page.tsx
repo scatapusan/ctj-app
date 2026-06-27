@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserClient } from "@/lib/supabase"
 import type { Event } from "@/lib/types"
 import { DataTable } from "@/components/admin/data-table"
 import { ListSkeleton } from "@/components/admin/list-skeleton"
@@ -27,14 +26,17 @@ export default function AttendancePage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createBrowserClient()
-      const { data } = await supabase
-        .from("events")
-        .select("*")
-        .order("event_date", { ascending: false })
-
-      if (data) setEvents(data)
-      setLoading(false)
+      try {
+        const res = await fetch("/api/admin/events")
+        if (res.ok) {
+          const data = await res.json()
+          setEvents(data.events as Event[])
+        }
+      } catch {
+        // leave empty on error
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [])
@@ -43,37 +45,19 @@ export default function AttendancePage() {
     setSelectedEventId(eventId)
     setRecordsLoading(true)
 
-    const supabase = createBrowserClient()
-    const { data: attendanceData } = await supabase
-      .from("attendance")
-      .select("id, checked_in_at, member_id")
-      .eq("event_id", eventId)
-      .order("checked_in_at", { ascending: true })
-
-    if (attendanceData && attendanceData.length > 0) {
-      const memberIds = Array.from(new Set(attendanceData.map((a) => a.member_id)))
-      const { data: membersData } = await supabase
-        .from("members")
-        .select("id, first_name, last_name, email")
-        .in("id", memberIds)
-
-      const memberMap = new Map(
-        (membersData || []).map((m) => [m.id, { name: `${m.first_name} ${m.last_name}`, email: m.email }])
-      )
-
-      setRecords(
-        attendanceData.map((a) => ({
-          id: a.id,
-          member_name: memberMap.get(a.member_id)?.name || "Unknown",
-          email: memberMap.get(a.member_id)?.email || "",
-          checked_in_at: a.checked_in_at,
-        }))
-      )
-    } else {
+    try {
+      const res = await fetch(`/api/admin/attendance?eventId=${encodeURIComponent(eventId)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setRecords(data.records as AttendanceRecord[])
+      } else {
+        setRecords([])
+      }
+    } catch {
       setRecords([])
+    } finally {
+      setRecordsLoading(false)
     }
-
-    setRecordsLoading(false)
   }
 
   function exportCsv() {

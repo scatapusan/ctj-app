@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createBrowserClient, MEMBER_COLUMNS } from "@/lib/supabase"
-import type { Member } from "@/lib/types"
+import type { MemberSummary } from "@/lib/types"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -10,9 +9,9 @@ import { Loader2, Mail, UserPlus, UserCheck2 } from "lucide-react"
 
 interface EmailLookupProps {
   eventId: string
-  onMemberFound: (member: Member) => void
+  onMemberFound: (member: MemberSummary) => void
   onNewMember: (email: string) => void
-  onAlreadyCheckedIn: (member: Member) => void
+  onAlreadyCheckedIn: (member: MemberSummary) => void
   onGuestCheckIn: () => void
 }
 
@@ -42,41 +41,38 @@ export function EmailLookup({
     setLoading(true)
 
     try {
-      const supabase = createBrowserClient()
+      const res = await fetch("/api/attend/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed, eventId }),
+      })
 
-      const { data: member, error: memberError } = await supabase
-        .from("members")
-        .select(MEMBER_COLUMNS)
-        .eq("email", trimmed)
-        .maybeSingle()
-
-      if (memberError) {
+      if (res.status === 429) {
+        setError("Too many lookups. Please wait a moment and try again.")
+        setLoading(false)
+        return
+      }
+      if (!res.ok) {
         setError("Something went wrong. Please try again.")
-        console.error(memberError)
         setLoading(false)
         return
       }
 
-      if (!member) {
+      const data = await res.json()
+
+      if (!data.found) {
         setNotFoundEmail(trimmed)
         setShowNotFound(true)
         setLoading(false)
         return
       }
 
-      const { data: existingAttendance } = await supabase
-        .from("attendance")
-        .select("id")
-        .eq("member_id", member.id)
-        .eq("event_id", eventId)
-        .maybeSingle()
-
-      if (existingAttendance) {
-        onAlreadyCheckedIn(member as Member)
+      if (data.alreadyCheckedIn) {
+        onAlreadyCheckedIn(data.member as MemberSummary)
         return
       }
 
-      onMemberFound(member as Member)
+      onMemberFound(data.member as MemberSummary)
     } catch {
       setError("Network error. Please check your connection.")
     } finally {

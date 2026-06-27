@@ -58,3 +58,16 @@ export interface Attendance {
   event_id: string
   checked_in_at: string
 }
+
+/**
+ * Minimal member identity returned by /api/attend/lookup. Used by the pre-edit
+ * check-in screens; the full Member (with PII) is only fetched after the PIN via
+ * /api/attend/profile.
+ */
+export interface MemberSummary {
+  id: string
+  first_name: string
+  last_name: string
+  photo_url: string | null
+  is_guest: boolean
+}

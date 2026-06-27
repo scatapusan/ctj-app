@@ -2,8 +2,15 @@ import { NextResponse } from "next/server"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { exportAllToSheet } from "@/lib/google-sheets"
 import { MEMBER_COLUMNS } from "@/lib/supabase"
+import { readSession } from "@/lib/admin-session"
 
 export async function POST() {
+  // Only an authenticated admin may export the full roster to Sheets.
+  const session = readSession()
+  if (!session || session.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   try {
     const supabase = createRouteHandlerClient()
 

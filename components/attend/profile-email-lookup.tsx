@@ -1,15 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { createBrowserClient, MEMBER_COLUMNS } from "@/lib/supabase"
-import type { Member } from "@/lib/types"
+import type { MemberSummary } from "@/lib/types"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2, Mail } from "lucide-react"
 
 interface ProfileEmailLookupProps {
-  onMemberFound: (member: Member) => void
+  onMemberFound: (member: MemberSummary) => void
 }
 
 export function ProfileEmailLookup({ onMemberFound }: ProfileEmailLookupProps) {
@@ -30,28 +29,32 @@ export function ProfileEmailLookup({ onMemberFound }: ProfileEmailLookupProps) {
     setLoading(true)
 
     try {
-      const supabase = createBrowserClient()
+      const res = await fetch("/api/attend/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      })
 
-      const { data: member, error: memberError } = await supabase
-        .from("members")
-        .select(MEMBER_COLUMNS)
-        .eq("email", trimmed)
-        .maybeSingle()
-
-      if (memberError) {
+      if (res.status === 429) {
+        setError("Too many lookups. Please wait a moment and try again.")
+        setLoading(false)
+        return
+      }
+      if (!res.ok) {
         setError("Something went wrong. Please try again.")
-        console.error(memberError)
         setLoading(false)
         return
       }
 
-      if (!member) {
+      const data = await res.json()
+
+      if (!data.found) {
         setError("No account found with this email. Please check in to an event first to register.")
         setLoading(false)
         return
       }
 
-      onMemberFound(member as Member)
+      onMemberFound(data.member as MemberSummary)
     } catch {
       setError("Network error. Please check your connection.")
     } finally {

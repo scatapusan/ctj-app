@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserClient } from "@/lib/supabase"
 import { useRole } from "@/components/admin/role-provider"
 import { StatsCard } from "@/components/admin/stats-card"
 import { DashboardSkeleton } from "@/components/admin/dashboard-skeleton"
@@ -30,64 +29,22 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createBrowserClient()
-
-      // Fetch counts in parallel
-      const [membersRes, eventsRes, adminsRes, recentRes] = await Promise.all([
-        supabase.from("members").select("id", { count: "exact", head: true }),
-        supabase.from("events").select("id", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("members").select("id", { count: "exact", head: true }).eq("is_admin", true),
-        supabase
-          .from("attendance")
-          .select("id, checked_in_at, member_id, event_id")
-          .order("checked_in_at", { ascending: false })
-          .limit(10),
-      ])
-
-      setTotalMembers(membersRes.count ?? 0)
-      setActiveEvents(eventsRes.count ?? 0)
-      setTotalAdmins(adminsRes.count ?? 0)
-
-      // Today's attendance
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const { count: todayCount } = await supabase
-        .from("attendance")
-        .select("id", { count: "exact", head: true })
-        .gte("checked_in_at", today.toISOString())
-
-      setTodayAttendance(todayCount ?? 0)
-
-      // Enrich recent check-ins with member/event names
-      if (recentRes.data && recentRes.data.length > 0) {
-        const memberIds = Array.from(new Set(recentRes.data.map((a) => a.member_id)))
-        const eventIds = Array.from(new Set(recentRes.data.map((a) => a.event_id)))
-
-        const [membersData, eventsData] = await Promise.all([
-          supabase.from("members").select("id, first_name, last_name").in("id", memberIds),
-          supabase.from("events").select("id, name").in("id", eventIds),
-        ])
-
-        const memberMap = new Map(
-          (membersData.data || []).map((m) => [m.id, `${m.first_name} ${m.last_name}`])
-        )
-        const eventMap = new Map(
-          (eventsData.data || []).map((e) => [e.id, e.name])
-        )
-
-        setRecent(
-          recentRes.data.map((a) => ({
-            id: a.id,
-            checked_in_at: a.checked_in_at,
-            member_name: memberMap.get(a.member_id) || "Unknown",
-            event_name: eventMap.get(a.event_id) || "Unknown Event",
-          }))
-        )
+      try {
+        const res = await fetch("/api/admin/dashboard")
+        if (res.ok) {
+          const data = await res.json()
+          setTotalMembers(data.stats.totalMembers)
+          setActiveEvents(data.stats.activeEvents)
+          setTodayAttendance(data.stats.todayAttendance)
+          setTotalAdmins(data.stats.totalAdmins)
+          setRecent(data.recent)
+        }
+      } catch {
+        // leave defaults on network error
+      } finally {
+        setLoading(false)
       }
-
-      setLoading(false)
     }
-
     load()
   }, [])
 
