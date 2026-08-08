@@ -141,6 +141,59 @@ describe("retreat migration — pre-registration path", () => {
     expect(res.rows[0].is_youth_ya_core).toBe(false)
   })
 
+  it("marking one pre-registered row attended NEVER disturbs any other row", async () => {
+    // Two fresh pre-registrations + the earlier legacy check-ins already in
+    // the table. Mark ONE attended using the exact UPDATE the admin route
+    // issues, then prove every other row is byte-identical.
+    const a = await rpcRetreat(
+      { email: "mark-a@x.test", first_name: "Mark", last_name: "Able", birthdate: "2005-02-02" },
+      "registered",
+      { category: "youth" },
+    )
+    const b = await rpcRetreat(
+      { email: "mark-b@x.test", first_name: "Mark", last_name: "Baker", birthdate: "2004-03-03" },
+      "registered",
+      { category: "youth" },
+    )
+
+    const before = await db.client.query("select * from attendance order by id")
+    const targetRes = await db.client.query(
+      "select id from attendance where member_id=$1 and event_id=$2",
+      [a.rows[0].id, EVENT],
+    )
+    const targetId = targetRes.rows[0].id
+
+    await asRole(db.client, "service_role", () =>
+      db.client.query(
+        "update attendance set status='attended', attended_at=now() where id=$1 and status='registered'",
+        [targetId],
+      ),
+    )
+
+    const after = await db.client.query("select * from attendance order by id")
+    expect(after.rows.length).toBe(before.rows.length)
+    for (let i = 0; i < before.rows.length; i++) {
+      if (before.rows[i].id === targetId) {
+        expect(after.rows[i].status).toBe("attended")
+        expect(after.rows[i].attended_at).not.toBeNull()
+        // Everything else on the target row is untouched too.
+        const { status: _s1, attended_at: _a1, ...restBefore } = before.rows[i]
+        const { status: _s2, attended_at: _a2, ...restAfter } = after.rows[i]
+        expect(restAfter).toEqual(restBefore)
+      } else {
+        expect(after.rows[i]).toEqual(before.rows[i])
+      }
+    }
+
+    // The other pre-registration is specifically still 'registered'.
+    const other = await db.client.query(
+      "select status, attended_at from attendance where member_id=$1 and event_id=$2",
+      [b.rows[0].id, EVENT],
+    )
+    expect(other.rows[0].status).toBe("registered")
+    expect(other.rows[0].attended_at).toBeNull()
+  })
+
   it("a second registration for the same member+event violates the unique constraint (23505)", async () => {
     const res = await rpcLegacy({ email: "dupe@x.test", first_name: "Du", last_name: "Pe" })
     await expect(

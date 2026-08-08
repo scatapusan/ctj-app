@@ -15,6 +15,20 @@ interface AttendanceRecord {
   member_name: string
   email: string
   checked_in_at: string
+  status: "registered" | "attended"
+  attended_at: string | null
+}
+
+function StatusBadge({ status }: { status: AttendanceRecord["status"] }) {
+  return status === "registered" ? (
+    <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-muted text-muted-foreground ring-1 ring-border shrink-0">
+      Pre-registered
+    </span>
+  ) : (
+    <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-secondary text-foreground ring-1 ring-foreground shrink-0">
+      Attended
+    </span>
+  )
 }
 
 export default function AttendancePage() {
@@ -64,9 +78,10 @@ export default function AttendancePage() {
     if (!records.length || !selectedEventId) return
 
     const event = events.find((e) => e.id === selectedEventId)
-    const header = "Name,Email,Checked In At"
+    const header = "Name,Email,Status,Registered At,Attended At"
     const rows = records.map(
-      (r) => `"${r.member_name}","${r.email}","${format(new Date(r.checked_in_at), "yyyy-MM-dd HH:mm:ss")}"`
+      (r) =>
+        `"${r.member_name}","${r.email}","${r.status}","${format(new Date(r.checked_in_at), "yyyy-MM-dd HH:mm:ss")}","${r.attended_at ? format(new Date(r.attended_at), "yyyy-MM-dd HH:mm:ss") : ""}"`
     )
     const csv = [header, ...rows].join("\n")
 
@@ -142,7 +157,9 @@ export default function AttendancePage() {
               </h2>
               <span className="flex items-center gap-1 text-sm text-accent bg-secondary px-2.5 py-1 rounded-full ring-1 ring-foreground">
                 <Users className="size-3.5" />
-                {records.length}
+                {records.filter((r) => r.status === "attended").length} attended
+                {records.some((r) => r.status === "registered") &&
+                  ` · ${records.filter((r) => r.status === "registered").length} pre-registered`}
               </span>
             </div>
             {records.length > 0 && (
@@ -169,6 +186,14 @@ export default function AttendancePage() {
                 { key: "member_name", label: "Name", sortable: true },
                 { key: "email", label: "Email", sortable: true },
                 {
+                  key: "status",
+                  label: "Status",
+                  sortable: true,
+                  render: (item) => (
+                    <StatusBadge status={(item as unknown as AttendanceRecord).status} />
+                  ),
+                },
+                {
                   key: "checked_in_at",
                   label: "Checked In",
                   sortable: true,
@@ -193,9 +218,12 @@ export default function AttendancePage() {
                       <p className="font-medium text-foreground truncate">{r.member_name}</p>
                       <p className="text-xs text-muted-foreground truncate">{r.email}</p>
                     </div>
-                    <span className="text-xs text-accent/80 font-medium shrink-0">
-                      {format(new Date(r.checked_in_at), "h:mm a")}
-                    </span>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <StatusBadge status={r.status} />
+                      <span className="text-xs text-accent/80 font-medium">
+                        {format(new Date(r.checked_in_at), "h:mm a")}
+                      </span>
+                    </div>
                   </div>
                 )
               }}

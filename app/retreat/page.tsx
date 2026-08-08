@@ -25,6 +25,9 @@ function eventDateLine(dateStr: string): string {
 function RetreatPageContent() {
   const searchParams = useSearchParams()
   const eventParam = searchParams.get("event") || ""
+  // Day-of walk-in mode (linked from the staff check-in screen): same form,
+  // but the registration is recorded directly as attended.
+  const walkIn = searchParams.get("walkin") === "1"
 
   const [event, setEvent] = useState<Pick<Event, "id" | "name" | "event_date"> | null>(null)
   const [eventState, setEventState] = useState<"loading" | "ok" | "bad">(eventParam ? "loading" : "bad")
@@ -86,7 +89,9 @@ function RetreatPageContent() {
             <h1 className="text-xl font-extrabold tracking-tight text-foreground leading-tight">
               CTJCC Marikina
             </h1>
-            <p className="text-xs font-semibold text-muted-foreground">Retreat Pre-registration</p>
+            <p className="text-xs font-semibold text-muted-foreground">
+              {walkIn ? "Walk-in Registration" : "Retreat Pre-registration"}
+            </p>
           </div>
         </div>
 
@@ -152,11 +157,11 @@ function RetreatPageContent() {
           )}
 
           {eventState === "ok" && step === "new-form" && (
-            <RetreatForm email={email} eventId={eventParam} onSuccess={handleSuccess} />
+            <RetreatForm email={email} eventId={eventParam} walkIn={walkIn} onSuccess={handleSuccess} />
           )}
 
           {eventState === "ok" && step === "member-extras" && member && (
-            <RetreatExtras member={member} eventId={eventParam} onSuccess={handleSuccess} />
+            <RetreatExtras member={member} eventId={eventParam} walkIn={walkIn} onSuccess={handleSuccess} />
           )}
 
           {eventState === "ok" && step === "already" && (
@@ -188,9 +193,11 @@ function RetreatPageContent() {
                 <PartyPopper className="size-11 text-foreground" strokeWidth={2} />
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-extrabold text-foreground">You&apos;re pre-registered!</h2>
+                <h2 className="text-2xl font-extrabold text-foreground">
+                  {walkIn ? "You're checked in!" : "You're pre-registered!"}
+                </h2>
                 <p className="text-lg text-muted-foreground">
-                  See you at {event?.name ?? "the retreat"},{" "}
+                  {walkIn ? "Welcome to" : "See you at"} {event?.name ?? "the retreat"},{" "}
                   <span className="font-bold text-accent">{firstName}</span> — kita-kits!
                 </p>
                 {event && (

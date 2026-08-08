@@ -2,14 +2,17 @@ import { NextResponse } from "next/server"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
 import { syncMemberToSheet } from "@/lib/google-sheets"
+import { pushRegistrationToSheets, pushAttendanceToSheets } from "@/lib/attend-sheets"
 import type { Member } from "@/lib/types"
 
-// Retreat pre-registration (status='registered' — NOT a check-in).
+// Retreat registration. Default is PRE-registration (status='registered' —
+// NOT a check-in); `walkIn: true` is the day-of path and inserts directly as
+// 'attended' (equivalent trust level to the existing public check-in flow).
 //
 // Two shapes, both rate-limited:
-//   * New person:      { eventId, email, member: {...}, retreat: {...}, privacyConsent }
-//   * Existing member: { eventId, memberId, retreat: {...} }  (attendance row only —
-//     no member-profile writes without a PIN)
+//   * New person:      { eventId, email, member: {...}, retreat: {...}, privacyConsent, walkIn? }
+//   * Existing member: { eventId, memberId, retreat: {...}, walkIn? }  (attendance row
+//     only — no member-profile writes without a PIN)
 //
 // `retreat` carries the event-scoped answers; validation rules:
 //   * birthdate is REQUIRED for new people (category depends on it)
@@ -87,6 +90,8 @@ export async function POST(request: Request) {
   const eventId = typeof body.eventId === "string" ? body.eventId : ""
   const memberId = typeof body.memberId === "string" ? body.memberId : ""
   const retreatInput = (body.retreat ?? {}) as Record<string, unknown>
+  const walkIn = body.walkIn === true
+  const status = walkIn ? "attended" : "registered"
 
   if (!eventId) return NextResponse.json({ error: "Missing event." }, { status: 400 })
 
@@ -101,7 +106,7 @@ export async function POST(request: Request) {
 
     const { data: member } = await supabase
       .from("members")
-      .select("id, first_name")
+      .select("id, first_name, last_name, email")
       .eq("id", memberId)
       .maybeSingle()
     if (!member) return NextResponse.json({ error: "Member not found." }, { status: 404 })
@@ -109,7 +114,8 @@ export async function POST(request: Request) {
     const { error } = await supabase.from("attendance").insert({
       member_id: memberId,
       event_id: eventId,
-      status: "registered",
+      status,
+      attended_at: walkIn ? new Date().toISOString() : null,
       category: meta.category,
       baby_photo_url: meta.baby_photo_url,
       guardian_name: meta.guardian_name,
@@ -120,9 +126,12 @@ export async function POST(request: Request) {
       if (error.code === "23505") {
         return NextResponse.json({ error: "You're already registered for this event." }, { status: 409 })
       }
-      console.error("retreat pre-register (existing) error:", error)
+      console.error("retreat register (existing) error:", error)
       return NextResponse.json({ error: "Failed to register. Please try again." }, { status: 500 })
     }
+
+    // Walk-ins actually attended — push the attendance line (never throws).
+    if (walkIn) await pushAttendanceToSheets(supabase, member, eventId)
 
     return NextResponse.json({ ok: true, memberId, firstName: member.first_name })
   }
@@ -152,7 +161,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase.rpc("register_and_checkin", {
     p_member: member,
     p_event_id: eventId,
-    p_status: "registered",
+    p_status: status,
     p_retreat: meta,
   })
 
@@ -169,12 +178,17 @@ export async function POST(request: Request) {
 
   const created = (Array.isArray(data) ? data[0] : data) as Member
 
-  // Best-effort member sync to Sheets. Deliberately NOT syncAttendanceToSheet:
-  // pre-registration is not attendance; the sheet's attendance tab stays true.
-  try {
-    await syncMemberToSheet(created)
-  } catch (err) {
-    console.error("Sheets sync (retreat pre-registration) failed:", err)
+  if (walkIn) {
+    // Walk-ins attended for real: member + attendance lines (never throws).
+    await pushRegistrationToSheets(supabase, created, eventId)
+  } else {
+    // Pre-registration: member sync only. Deliberately NOT an attendance
+    // line — the sheet's attendance tab stays true.
+    try {
+      await syncMemberToSheet(created)
+    } catch (err) {
+      console.error("Sheets sync (retreat pre-registration) failed:", err)
+    }
   }
 
   return NextResponse.json({ ok: true, memberId: created.id, firstName: created.first_name })

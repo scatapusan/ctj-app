@@ -10,6 +10,7 @@ import {
   Calendar,
   Users,
   ClipboardList,
+  UserCheck,
   LogOut,
   Menu,
   X,
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/admin/events", label: "Events", icon: Calendar },
   { href: "/admin/members", label: "Members", icon: Users },
   { href: "/admin/attendance", label: "Attendance", icon: ClipboardList },
+  { href: "/admin/checkin", label: "Check-in", icon: UserCheck },
 ]
 
 export function Sidebar() {

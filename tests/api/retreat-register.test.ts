@@ -6,9 +6,14 @@ vi.mock("@/lib/google-sheets", () => ({
   syncMemberToSheet: vi.fn(async () => {}),
   syncAttendanceToSheet: vi.fn(async () => {}),
 }))
+vi.mock("@/lib/attend-sheets", () => ({
+  pushRegistrationToSheets: vi.fn(async () => {}),
+  pushAttendanceToSheets: vi.fn(async () => {}),
+}))
 
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { syncMemberToSheet, syncAttendanceToSheet } from "@/lib/google-sheets"
+import { pushRegistrationToSheets, pushAttendanceToSheets } from "@/lib/attend-sheets"
 import { POST as retreatPOST } from "@/app/api/attend/retreat-register/route"
 import { __resetRateLimit } from "@/lib/rate-limit"
 
@@ -221,6 +226,66 @@ describe("POST /api/attend/retreat-register — existing member", () => {
     const res = await retreatPOST(req(body))
     expect(res.status).toBe(400)
     expect((await res.json()).error).toMatch(/guardian/i)
+  })
+})
+
+describe("POST /api/attend/retreat-register — walk-in mode (day-of)", () => {
+  it("new person walk-in registers with status='attended' and pushes member + attendance to Sheets", async () => {
+    let rpcArgs: Record<string, unknown> | undefined
+    use({ rpc: { data: okMember, error: null }, onRpc: (_fn, args) => { rpcArgs = args } })
+    const res = await retreatPOST(
+      req({
+        eventId: "e1",
+        email: "walkin@x.test",
+        privacyConsent: true,
+        walkIn: true,
+        member: { first_name: "Walk", last_name: "In", birthdate: birthdateForAge(20) },
+        retreat: { category: "youth" },
+      }),
+    )
+    expect(res.status).toBe(200)
+    expect(rpcArgs!.p_status).toBe("attended")
+    expect(pushRegistrationToSheets).toHaveBeenCalledTimes(1)
+    expect(syncMemberToSheet).not.toHaveBeenCalled()
+  })
+
+  it("existing member walk-in inserts status='attended' with attended_at stamped and pushes an attendance line", async () => {
+    let insertPayload: Record<string, unknown> | undefined
+    use({
+      select: { members: { data: { id: "m1", first_name: "Juan", last_name: "DelaCruz", email: "j@x.test" } } },
+      onInsert: (_t, payload) => { insertPayload = payload },
+    })
+    const res = await retreatPOST(
+      req({
+        eventId: "e1",
+        memberId: "m1",
+        walkIn: true,
+        retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: "https://x.test/b.jpg" },
+      }),
+    )
+    expect(res.status).toBe(200)
+    expect(insertPayload!.status).toBe("attended")
+    expect(insertPayload!.attended_at).toBeTruthy()
+    expect(pushAttendanceToSheets).toHaveBeenCalledTimes(1)
+  })
+
+  it("without walkIn, existing-member insert stays 'registered' with attended_at null and no attendance push", async () => {
+    let insertPayload: Record<string, unknown> | undefined
+    use({
+      select: { members: { data: { id: "m1", first_name: "Juan", last_name: "DelaCruz", email: "j@x.test" } } },
+      onInsert: (_t, payload) => { insertPayload = payload },
+    })
+    const res = await retreatPOST(
+      req({
+        eventId: "e1",
+        memberId: "m1",
+        retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: "https://x.test/b.jpg" },
+      }),
+    )
+    expect(res.status).toBe(200)
+    expect(insertPayload!.status).toBe("registered")
+    expect(insertPayload!.attended_at).toBeNull()
+    expect(pushAttendanceToSheets).not.toHaveBeenCalled()
   })
 })
 

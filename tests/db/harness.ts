@@ -3,6 +3,24 @@ import { Client } from "pg"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import os from "node:os"
+import net from "node:net"
+
+/** Ask the OS for a free TCP port (avoids Windows' excluded port ranges). */
+function getFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer()
+    srv.listen(0, "127.0.0.1", () => {
+      const address = srv.address()
+      if (address && typeof address === "object") {
+        const port = address.port
+        srv.close(() => resolve(port))
+      } else {
+        srv.close(() => reject(new Error("no port assigned")))
+      }
+    })
+    srv.on("error", reject)
+  })
+}
 
 const ROOT = process.cwd()
 
@@ -19,15 +37,27 @@ export interface TestDb {
  * grant semantics are identical across these versions.
  */
 export async function startTestDb(): Promise<TestDb> {
-  const port = 54100 + Math.floor(Math.random() * 3000)
-  const databaseDir = join(os.tmpdir(), `ctj-pgtest-${port}-${Date.now()}`)
-  const pg = new EmbeddedPostgres({ databaseDir, user: "postgres", password: "postgres", port, persistent: false })
-  await pg.initialise()
-  await pg.start()
-  await pg.createDatabase("ctjtest")
-  const client = new Client({ host: "127.0.0.1", port, user: "postgres", password: "postgres", database: "ctjtest" })
-  await client.connect()
-  return { pg, client, port }
+  // OS-assigned free ports (guessed ports collide with each other and with
+  // Windows' excluded port ranges); still retried because a freed port can be
+  // re-taken in the window before postgres binds it.
+  let lastError: unknown
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const port = await getFreePort()
+    const databaseDir = join(os.tmpdir(), `ctj-pgtest-${port}-${Date.now()}`)
+    const pg = new EmbeddedPostgres({ databaseDir, user: "postgres", password: "postgres", port, persistent: false })
+    try {
+      await pg.initialise()
+      await pg.start()
+      await pg.createDatabase("ctjtest")
+      const client = new Client({ host: "127.0.0.1", port, user: "postgres", password: "postgres", database: "ctjtest" })
+      await client.connect()
+      return { pg, client, port }
+    } catch (err) {
+      lastError = err
+      try { await pg.stop() } catch { /* ignore */ }
+    }
+  }
+  throw lastError
 }
 
 export async function stopTestDb(db: TestDb): Promise<void> {

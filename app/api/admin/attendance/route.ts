@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const supabase = createRouteHandlerClient()
   const { data: attendance, error } = await supabase
     .from("attendance")
-    .select("id, checked_in_at, member_id")
+    .select("id, checked_in_at, member_id, status, attended_at")
     .eq("event_id", eventId)
     .order("checked_in_at", { ascending: true })
 
@@ -22,7 +22,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Failed to load attendance." }, { status: 500 })
   }
 
-  let records: { id: string; member_name: string; email: string; checked_in_at: string }[] = []
+  let records: {
+    id: string
+    member_name: string
+    email: string
+    checked_in_at: string
+    status: string
+    attended_at: string | null
+  }[] = []
   const rows = attendance ?? []
   if (rows.length > 0) {
     const memberIds = Array.from(new Set(rows.map((a) => a.member_id)))
@@ -38,6 +45,9 @@ export async function GET(request: Request) {
       member_name: memberMap.get(a.member_id)?.name ?? "Unknown",
       email: memberMap.get(a.member_id)?.email ?? "",
       checked_in_at: a.checked_in_at,
+      // Default for rows written before the retreat migration is applied.
+      status: (a as { status?: string }).status ?? "attended",
+      attended_at: (a as { attended_at?: string | null }).attended_at ?? null,
     }))
   }
 

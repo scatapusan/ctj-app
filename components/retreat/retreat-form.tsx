@@ -13,11 +13,13 @@ import { Loader2, UserPlus } from "lucide-react"
 interface RetreatFormProps {
   email: string
   eventId: string
+  /** Day-of walk-in: record directly as attended instead of pre-registered. */
+  walkIn?: boolean
   onSuccess: (firstName: string) => void
 }
 
-/** Retreat pre-registration for someone who isn't in the system yet. */
-export function RetreatForm({ email, eventId, onSuccess }: RetreatFormProps) {
+/** Retreat registration for someone who isn't in the system yet. */
+export function RetreatForm({ email, eventId, walkIn, onSuccess }: RetreatFormProps) {
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [nickname, setNickname] = useState("")
@@ -95,6 +97,7 @@ export function RetreatForm({ email, eventId, onSuccess }: RetreatFormProps) {
         body: JSON.stringify({
           eventId,
           email,
+          walkIn: walkIn === true,
           privacyConsent,
           member: {
             first_name: firstName.trim(),
@@ -131,7 +134,9 @@ export function RetreatForm({ email, eventId, onSuccess }: RetreatFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-1">
-        <h2 className="text-2xl font-extrabold leading-tight text-foreground">Sign up for the retreat</h2>
+        <h2 className="text-2xl font-extrabold leading-tight text-foreground">
+          {walkIn ? "Welcome! Let's get you in" : "Sign up for the retreat"}
+        </h2>
         <p className="text-sm font-medium text-muted-foreground">
           Registering as <span className="font-bold text-accent">{email}</span>
         </p>
@@ -260,7 +265,7 @@ export function RetreatForm({ email, eventId, onSuccess }: RetreatFormProps) {
         ) : (
           <>
             <UserPlus className="size-5 mr-2" />
-            Pre-register
+            {walkIn ? "Register & Check In" : "Pre-register"}
           </>
         )}
       </Button>

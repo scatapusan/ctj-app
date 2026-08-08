@@ -11,6 +11,8 @@ import { Loader2, CheckCircle2 } from "lucide-react"
 interface RetreatExtrasProps {
   member: MemberSummary
   eventId: string
+  /** Day-of walk-in: record directly as attended instead of pre-registered. */
+  walkIn?: boolean
   onSuccess: (firstName: string) => void
 }
 
@@ -21,7 +23,7 @@ interface RetreatExtrasProps {
  * (that sits behind the PIN), and category depends on it. Nothing on the
  * member profile is written; the answers live on the attendance row.
  */
-export function RetreatExtras({ member, eventId, onSuccess }: RetreatExtrasProps) {
+export function RetreatExtras({ member, eventId, walkIn, onSuccess }: RetreatExtrasProps) {
   const [birthdate, setBirthdate] = useState("")
   const [category, setCategory] = useState<RetreatCategory | null>(null)
   const [guardianName, setGuardianName] = useState("")
@@ -92,6 +94,7 @@ export function RetreatExtras({ member, eventId, onSuccess }: RetreatExtrasProps
         body: JSON.stringify({
           eventId,
           memberId: member.id,
+          walkIn: walkIn === true,
           retreat: {
             birthdate,
             category,
@@ -166,7 +169,7 @@ export function RetreatExtras({ member, eventId, onSuccess }: RetreatExtrasProps
         ) : (
           <>
             <CheckCircle2 className="size-5 mr-2" />
-            Pre-register
+            {walkIn ? "Check In" : "Pre-register"}
           </>
         )}
       </Button>
