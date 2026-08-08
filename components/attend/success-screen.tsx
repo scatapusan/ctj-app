@@ -6,11 +6,13 @@ import { CheckCircle2, RotateCcw, Pencil, Home } from "lucide-react"
 
 interface SuccessScreenProps {
   firstName: string
+  /** Event name for context (omitted when arriving via a QR deep link). */
+  eventName?: string
   onReset: () => void
   onEditProfile?: () => void
 }
 
-export function SuccessScreen({ firstName, onReset, onEditProfile }: SuccessScreenProps) {
+export function SuccessScreen({ firstName, eventName, onReset, onEditProfile }: SuccessScreenProps) {
   return (
     <div
       role="status"
@@ -26,8 +28,8 @@ export function SuccessScreen({ firstName, onReset, onEditProfile }: SuccessScre
           Attendance Confirmed!
         </h2>
         <p className="text-lg text-muted-foreground">
-          See you at fellowship,{" "}
-          <span className="font-bold text-accent">{firstName}</span>!
+          See you at {eventName || "fellowship"},{" "}
+          <span className="font-bold text-accent">{firstName}</span> — kita-kits!
         </p>
       </div>
 

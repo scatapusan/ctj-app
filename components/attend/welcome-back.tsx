@@ -96,7 +96,7 @@ export function WelcomeBack({ member, eventId, onSuccess, onEditProfile }: Welco
         onClick={onEditProfile}
       >
         <Pencil className="size-4 mr-2" />
-        Edit My Profile
+        Update My Profile
       </Button>
     </div>
   )

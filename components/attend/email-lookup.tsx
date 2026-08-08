@@ -86,9 +86,10 @@ export function EmailLookup({
       <div className="space-y-5 text-center">
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">
-            No account found for <span className="text-accent font-bold">{notFoundEmail}</span>
+            We couldn&apos;t find <span className="text-accent font-bold">{notFoundEmail}</span> in
+            our list yet — welcome!
           </p>
-          <p className="text-sm font-medium text-muted-foreground">How would you like to proceed?</p>
+          <p className="text-sm font-medium text-muted-foreground">How would you like to check in?</p>
         </div>
 
         <div className="space-y-3">

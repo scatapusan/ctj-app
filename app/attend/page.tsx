@@ -39,6 +39,7 @@ function AttendPageContent() {
     eventParam ? "email-input" : "select-event"
   )
   const [eventId, setEventId] = useState<string>(eventParam || "")
+  const [eventName, setEventName] = useState<string>("")
   // `member` is the minimal summary for pre-edit screens; `editMember` is the
   // full PII record, fetched only after the PIN. `editPin` re-authorizes saves.
   const [member, setMember] = useState<MemberSummary | null>(null)
@@ -48,8 +49,9 @@ function AttendPageContent() {
   const [firstName, setFirstName] = useState("")
   const [returnToStep, setReturnToStep] = useState<FlowStep>("welcome-back")
 
-  function handleEventSelect(id: string) {
+  function handleEventSelect(id: string, name: string) {
     setEventId(id)
+    setEventName(name)
     setStep("email-input")
   }
 
@@ -328,6 +330,7 @@ function AttendPageContent() {
           {step === "success" && (
             <SuccessScreen
               firstName={firstName}
+              eventName={eventName || undefined}
               onReset={handleReset}
               onEditProfile={member ? () => handleEditProfile("success") : undefined}
             />

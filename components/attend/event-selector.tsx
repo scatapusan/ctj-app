@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Loader2, CalendarDays, Check } from "lucide-react"
 
 interface EventSelectorProps {
-  onSelect: (eventId: string) => void
+  onSelect: (eventId: string, eventName: string) => void
   /** Optional walk-in/first-timer path: called with the chosen event. */
   onGuest?: (eventId: string) => void
 }
@@ -141,7 +141,7 @@ export function EventSelector({ onSelect, onGuest }: EventSelectorProps) {
         size="lg"
         className="w-full min-h-[52px] text-lg"
         disabled={!selectedId}
-        onClick={() => onSelect(selectedId)}
+        onClick={() => onSelect(selectedId, events.find((e) => e.id === selectedId)?.name ?? "")}
       >
         Continue
       </Button>
