@@ -12,7 +12,7 @@ export function Skeleton({ className, label = "Loading", ...props }: SkeletonPro
       aria-busy="true"
       aria-label={label}
       className={cn(
-        "animate-pulse rounded-md bg-white/[0.04]",
+        "animate-pulse rounded-md bg-muted",
         className
       )}
       {...props}

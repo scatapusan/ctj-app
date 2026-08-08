@@ -136,7 +136,7 @@ export default function AdminDashboard() {
 
       {/* Recent check-ins */}
       <div className="glass rounded-xl p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-orange-400/80 uppercase tracking-wider">
+        <h2 className="text-sm font-semibold text-accent/80 uppercase tracking-wider">
           Recent Check-ins
         </h2>
 
@@ -147,7 +147,7 @@ export default function AdminDashboard() {
             {recent.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/[0.02] border border-white/[0.04]"
+                className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border/30"
               >
                 <div>
                   <p className="text-sm font-medium text-foreground/90">{item.member_name}</p>

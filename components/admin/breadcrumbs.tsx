@@ -50,11 +50,11 @@ export function Breadcrumbs() {
               <>
                 <Link
                   href={crumb.href}
-                  className="hover:text-orange-400 transition-colors"
+                  className="hover:text-foreground transition-colors"
                 >
                   {crumb.label}
                 </Link>
-                <ChevronRight className="size-3 text-muted-foreground/50" />
+                <ChevronRight className="size-3 text-muted-foreground" />
               </>
             )}
           </li>

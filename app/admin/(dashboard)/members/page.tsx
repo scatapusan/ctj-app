@@ -248,7 +248,7 @@ export default function MembersPage() {
           variant="ghost"
           size="sm"
           onClick={() => setSelectedMember(null)}
-          className="text-muted-foreground hover:text-orange-400"
+          className="text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4 mr-1" />
           Back to Members
@@ -257,9 +257,9 @@ export default function MembersPage() {
         <div className="glass rounded-xl p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 ring-2 ring-orange-500/30">
+            <Avatar className="h-16 w-16 ring-2 ring-foreground">
               {m.photo_url ? <AvatarImage src={m.photo_url} alt={m.first_name} /> : null}
-              <AvatarFallback className="text-lg font-semibold bg-orange-500/10 text-orange-400">
+              <AvatarFallback className="text-lg font-semibold bg-secondary text-accent">
                 {initials}
               </AvatarFallback>
             </Avatar>
@@ -270,22 +270,22 @@ export default function MembersPage() {
               <p className="text-sm text-muted-foreground">{m.email}</p>
               <div className="flex gap-2 mt-1">
                 {m.is_admin && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20 font-medium">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-accent ring-1 ring-foreground font-medium">
                     Admin
                   </span>
                 )}
                 {m.is_youth_ya_core && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20 font-medium">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground ring-1 ring-border font-medium">
                     Core
                   </span>
                 )}
                 {m.is_guest && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20 font-medium">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-accent ring-1 ring-border font-medium">
                     Guest
                   </span>
                 )}
                 {m.member_group && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20 font-medium">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-accent ring-1 ring-border font-medium">
                     {m.member_group}
                   </span>
                 )}
@@ -308,7 +308,7 @@ export default function MembersPage() {
 
           {/* Family */}
           <div>
-            <p className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider mb-2">
+            <p className="text-xs font-semibold text-accent/80 uppercase tracking-wider mb-2">
               Family
             </p>
             <div className="grid sm:grid-cols-2 gap-4 text-sm">
@@ -322,7 +322,7 @@ export default function MembersPage() {
 
           {/* Emergency Contact */}
           <div>
-            <p className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider mb-2">
+            <p className="text-xs font-semibold text-accent/80 uppercase tracking-wider mb-2">
               Emergency Contact
             </p>
             <div className="grid sm:grid-cols-2 gap-4 text-sm">
@@ -333,7 +333,7 @@ export default function MembersPage() {
 
           {/* Discipleship & Ministry */}
           <div>
-            <p className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider mb-2">
+            <p className="text-xs font-semibold text-accent/80 uppercase tracking-wider mb-2">
               Discipleship & Ministry
             </p>
             <div className="grid sm:grid-cols-2 gap-4 text-sm">
@@ -347,7 +347,7 @@ export default function MembersPage() {
 
           {/* Seminar completion */}
           <div>
-            <p className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider mb-2">
+            <p className="text-xs font-semibold text-accent/80 uppercase tracking-wider mb-2">
               Status
             </p>
             <div className="flex flex-wrap gap-2">
@@ -360,9 +360,9 @@ export default function MembersPage() {
           </div>
 
           {/* Group assignment — both superadmin and core can set */}
-          <div className="pt-2 border-t border-white/[0.06] space-y-3">
+          <div className="pt-2 border-t border-border/30 space-y-3">
             <div>
-              <p className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider mb-2">
+              <p className="text-xs font-semibold text-accent/80 uppercase tracking-wider mb-2">
                 <UsersRound className="size-3 inline mr-1" />
                 Member Group
               </p>
@@ -435,7 +435,7 @@ export default function MembersPage() {
 
             {/* Data management — superadmin only */}
             {isSuperadmin && (
-              <div className="flex gap-3 flex-wrap pt-2 border-t border-white/[0.06]">
+              <div className="flex gap-3 flex-wrap pt-2 border-t border-border/30">
                 <Button
                   variant="outline"
                   size="sm"
@@ -447,11 +447,11 @@ export default function MembersPage() {
 
                 {deletingMember ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-red-400">Permanently delete all data?</span>
+                    <span className="text-xs text-destructive">Permanently delete all data?</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-red-400 hover:text-red-300 text-xs"
+                      className="text-destructive hover:text-destructive text-xs"
                       onClick={() => handleDeleteMember(m)}
                       disabled={actionLoading}
                     >
@@ -470,7 +470,7 @@ export default function MembersPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-red-400 border-red-500/20 hover:bg-red-500/10 hover:text-red-300"
+                    className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
                     onClick={() => setDeletingMember(true)}
                   >
                     <Trash2 className="size-4 mr-1.5" />
@@ -484,7 +484,7 @@ export default function MembersPage() {
 
         {/* Attendance history */}
         <div className="glass rounded-xl p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-orange-400/80 uppercase tracking-wider">
+          <h3 className="text-sm font-semibold text-accent/80 uppercase tracking-wider">
             Attendance History ({attendanceHistory.length})
           </h3>
 
@@ -495,10 +495,10 @@ export default function MembersPage() {
               {attendanceHistory.map((a) => (
                 <div
                   key={a.id}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/[0.02] border border-white/[0.04]"
+                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border/30"
                 >
                   <span className="text-sm text-foreground/80 flex items-center gap-2">
-                    <Calendar className="size-3 text-orange-400/60" />
+                    <Calendar className="size-3 text-muted-foreground" />
                     {a.event_name}
                   </span>
                   <span className="text-xs text-muted-foreground">
@@ -568,7 +568,7 @@ export default function MembersPage() {
               return (
                 <Avatar className="h-8 w-8">
                   {m.photo_url ? <AvatarImage src={m.photo_url} alt={m.first_name} /> : null}
-                  <AvatarFallback className="text-xs bg-orange-500/10 text-orange-400">
+                  <AvatarFallback className="text-xs bg-secondary text-accent">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -585,22 +585,22 @@ export default function MembersPage() {
                 <span className="font-medium">
                   {m.first_name} {m.last_name}
                   {m.is_admin && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20">
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-accent ring-1 ring-foreground">
                       Admin
                     </span>
                   )}
                   {m.is_youth_ya_core && !m.is_admin && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20">
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground ring-1 ring-border">
                       Core
                     </span>
                   )}
                   {m.is_guest && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20">
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-accent ring-1 ring-border">
                       Guest
                     </span>
                   )}
                   {m.member_group && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20">
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-accent ring-1 ring-border">
                       {m.member_group}
                     </span>
                   )}
@@ -621,7 +621,7 @@ export default function MembersPage() {
             <div className="glass rounded-xl p-3 flex items-center gap-3 active:scale-[0.99] transition-transform">
               <Avatar className="h-12 w-12 shrink-0">
                 {m.photo_url ? <AvatarImage src={m.photo_url} alt={m.first_name} /> : null}
-                <AvatarFallback className="bg-orange-500/10 text-orange-400 font-semibold">
+                <AvatarFallback className="bg-secondary text-accent font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -631,27 +631,27 @@ export default function MembersPage() {
                     {m.first_name} {m.last_name}
                   </p>
                   {m.is_admin && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20 shrink-0">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-accent ring-1 ring-foreground shrink-0">
                       Admin
                     </span>
                   )}
                   {m.is_youth_ya_core && !m.is_admin && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20 shrink-0">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground ring-1 ring-border shrink-0">
                       Core
                     </span>
                   )}
                   {m.is_guest && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20 shrink-0">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-accent ring-1 ring-border shrink-0">
                       Guest
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">{m.email}</p>
                 {m.contact_number && (
-                  <p className="text-xs text-muted-foreground/70">{m.contact_number}</p>
+                  <p className="text-xs text-muted-foreground">{m.contact_number}</p>
                 )}
               </div>
-              <ChevronRight className="size-4 text-muted-foreground/50 shrink-0" />
+              <ChevronRight className="size-4 text-muted-foreground shrink-0" />
             </div>
           )
         }}
@@ -674,8 +674,8 @@ function StatusBadge({ label, completed }: { label: string; completed: boolean }
     <span
       className={`text-xs px-2.5 py-1 rounded-full font-medium ${
         completed
-          ? "bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20"
-          : "bg-white/[0.04] text-muted-foreground/60 ring-1 ring-white/[0.06]"
+          ? "bg-secondary text-accent ring-1 ring-foreground"
+          : "bg-card text-muted-foreground ring-1 ring-border/40"
       }`}
     >
       {completed ? "\u2713" : "\u2717"} {label}

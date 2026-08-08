@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { MemberSummary } from "@/lib/types"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Loader2, HandMetal, Pencil } from "lucide-react"
+import { Loader2, Hand, Pencil } from "lucide-react"
 
 interface WelcomeBackProps {
   member: MemberSummary
@@ -49,34 +49,33 @@ export function WelcomeBack({ member, eventId, onSuccess, onEditProfile }: Welco
   return (
     <div className="flex flex-col items-center text-center space-y-6 py-4">
       <div className="relative">
-        <Avatar className="h-24 w-24 ring-2 ring-orange-500/30 shadow-glow">
+        <Avatar className="h-24 w-24 border-[2.5px] border-foreground shadow-pop">
           {member.photo_url ? (
             <AvatarImage src={member.photo_url} alt={member.first_name} />
           ) : null}
-          <AvatarFallback className="text-2xl font-semibold bg-orange-500/10 text-orange-400">
+          <AvatarFallback className="text-2xl font-bold bg-secondary text-foreground">
             {initials.toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <div className="absolute -bottom-1 -right-1 rounded-full bg-orange-500 p-1.5 ring-2 ring-background">
-          <HandMetal className="size-3.5 text-white" />
+        <div className="absolute -bottom-1 -right-1 rounded-full bg-primary border-2 border-foreground p-1.5">
+          <Hand className="size-3.5 text-foreground" />
         </div>
       </div>
 
       <div className="space-y-1">
-        <p className="text-lg text-muted-foreground">Welcome back!</p>
-        <p className="text-3xl font-bold gradient-text">
+        <p className="text-lg font-medium text-muted-foreground">Welcome back!</p>
+        <p className="text-3xl font-extrabold text-foreground">
           {member.first_name}
         </p>
       </div>
 
       {error && (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm font-semibold text-destructive" role="alert">{error}</p>
       )}
 
       <Button
-        variant="gradient"
         size="lg"
-        className="w-full min-h-[52px] text-lg font-semibold"
+        className="w-full min-h-[52px] text-lg"
         onClick={handleConfirm}
         disabled={loading}
       >
@@ -93,11 +92,11 @@ export function WelcomeBack({ member, eventId, onSuccess, onEditProfile }: Welco
       <Button
         variant="ghost"
         size="lg"
-        className="w-full min-h-[44px] text-base text-muted-foreground hover:text-orange-400"
+        className="w-full min-h-[44px] text-base text-muted-foreground hover:text-foreground"
         onClick={onEditProfile}
       >
         <Pencil className="size-4 mr-2" />
-        Edit My Profile
+        Update My Profile
       </Button>
     </div>
   )

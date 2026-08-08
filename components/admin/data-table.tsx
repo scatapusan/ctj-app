@@ -100,7 +100,7 @@ export function DataTable<T extends Record<string, unknown>>({
       {mobileCard && (
         <div className="lg:hidden space-y-3">
           {paged.length === 0 ? (
-            <div className="rounded-xl border border-white/[0.06] px-4 py-8 text-center text-sm text-muted-foreground">
+            <div className="rounded-xl border border-border/30 px-4 py-8 text-center text-sm text-muted-foreground">
               {emptyMessage}
             </div>
           ) : (
@@ -118,10 +118,10 @@ export function DataTable<T extends Record<string, unknown>>({
       )}
 
       {/* Table (desktop, or fallback when no mobileCard) */}
-      <div className={`overflow-x-auto rounded-xl border border-white/[0.06] ${mobileCard ? "hidden lg:block" : ""}`}>
+      <div className={`overflow-x-auto rounded-xl border border-border/30 ${mobileCard ? "hidden lg:block" : ""}`}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/[0.06] bg-white/[0.02]">
+            <tr className="border-b border-border/30 bg-muted/50">
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -133,7 +133,7 @@ export function DataTable<T extends Record<string, unknown>>({
                   <span className="flex items-center gap-1">
                     {col.label}
                     {sortKey === col.key && (
-                      <span className="text-orange-400">
+                      <span className="text-accent">
                         {sortDir === "asc" ? "\u2191" : "\u2193"}
                       </span>
                     )}
@@ -157,9 +157,9 @@ export function DataTable<T extends Record<string, unknown>>({
                 <tr
                   key={i}
                   onClick={onRowClick ? () => onRowClick(item) : undefined}
-                  className={`border-b border-white/[0.04] transition-colors ${
+                  className={`border-b border-border/30 transition-colors ${
                     onRowClick
-                      ? "cursor-pointer hover:bg-white/[0.04]"
+                      ? "cursor-pointer hover:bg-card"
                       : ""
                   }`}
                 >

@@ -76,7 +76,7 @@ export function ProfileEmailLookup({ onMemberFound }: ProfileEmailLookupProps) {
           Email Address
         </Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-orange-400/60" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             id="profile-email"
             type="email"
@@ -92,7 +92,7 @@ export function ProfileEmailLookup({ onMemberFound }: ProfileEmailLookupProps) {
       </div>
 
       {error && (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-destructive">{error}</p>
       )}
 
       <Button

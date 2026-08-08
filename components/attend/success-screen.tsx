@@ -6,31 +6,30 @@ import { CheckCircle2, RotateCcw, Pencil, Home } from "lucide-react"
 
 interface SuccessScreenProps {
   firstName: string
+  /** Event name for context (omitted when arriving via a QR deep link). */
+  eventName?: string
   onReset: () => void
   onEditProfile?: () => void
 }
 
-export function SuccessScreen({ firstName, onReset, onEditProfile }: SuccessScreenProps) {
+export function SuccessScreen({ firstName, eventName, onReset, onEditProfile }: SuccessScreenProps) {
   return (
     <div
       role="status"
       aria-live="polite"
       className="flex flex-col items-center justify-center text-center space-y-6 py-8 relative"
     >
-      {/* Subtle glow behind checkmark */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full bg-orange-500/10 blur-[60px] animate-pulse-glow" />
-
-      <div className="relative animate-check-scale">
-        <CheckCircle2 className="size-20 text-orange-400 drop-shadow-[0_0_20px_rgba(245,145,30,0.4)]" strokeWidth={1.5} />
+      <div className="animate-check-scale w-24 h-24 rounded-full bg-primary border-[2.5px] border-foreground shadow-pop flex items-center justify-center">
+        <CheckCircle2 className="size-12 text-foreground" strokeWidth={2} />
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold gradient-text">
+        <h2 className="text-2xl font-extrabold text-foreground">
           Attendance Confirmed!
         </h2>
         <p className="text-lg text-muted-foreground">
-          See you at fellowship,{" "}
-          <span className="font-semibold text-orange-400">{firstName}</span>!
+          See you at {eventName || "fellowship"},{" "}
+          <span className="font-bold text-accent">{firstName}</span> — kita-kits!
         </p>
       </div>
 
@@ -61,7 +60,7 @@ export function SuccessScreen({ firstName, onReset, onEditProfile }: SuccessScre
           <Button
             variant="ghost"
             size="lg"
-            className="w-full min-h-[44px] text-base text-muted-foreground/70 hover:text-orange-400"
+            className="w-full min-h-[44px] text-base text-muted-foreground hover:text-foreground"
           >
             <Home className="size-4 mr-2" />
             Back to Home

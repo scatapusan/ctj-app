@@ -114,14 +114,14 @@ export function PinEntry({ memberId, onVerified, onCancel }: PinEntryProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col items-center text-center space-y-6 py-4">
       <div className="relative">
-        <div className="rounded-full bg-orange-500/10 p-4 ring-1 ring-orange-500/20">
-          <Lock className="size-8 text-orange-400" />
+        <div className="rounded-full bg-secondary border-2 border-foreground p-4">
+          <Lock className="size-8 text-foreground" />
         </div>
       </div>
 
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold gradient-text">Enter Your PIN</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="text-lg font-extrabold text-foreground">Enter Your PIN</h2>
+        <p className="text-sm font-medium text-muted-foreground">
           Enter your 4-digit PIN to access your profile
         </p>
       </div>
@@ -141,7 +141,8 @@ export function PinEntry({ memberId, onVerified, onCancel }: PinEntryProps) {
             onChange={(e) => handleDigitChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
             onPaste={i === 0 ? handlePaste : undefined}
-            className="w-14 h-16 text-center text-2xl font-bold rounded-xl bg-white/[0.04] border border-white/[0.1] text-foreground focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 focus:outline-none transition-all duration-200"
+            aria-label={`PIN digit ${i + 1} of 4`}
+            className="w-14 h-16 text-center text-2xl font-bold rounded-xl bg-card border-2 border-foreground text-foreground focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:outline-none transition-all duration-200"
             disabled={loading}
             autoComplete="off"
           />
@@ -149,15 +150,14 @@ export function PinEntry({ memberId, onVerified, onCancel }: PinEntryProps) {
       </div>
 
       {error && (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm font-semibold text-destructive" role="alert">{error}</p>
       )}
 
       <div className="w-full space-y-3">
         <Button
           type="submit"
-          variant="gradient"
           size="lg"
-          className="w-full min-h-[48px] text-base font-semibold"
+          className="w-full min-h-[48px] text-base"
           disabled={loading || digits.some((d) => d === "")}
         >
           {loading ? (
@@ -185,8 +185,8 @@ export function PinEntry({ memberId, onVerified, onCancel }: PinEntryProps) {
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground/60">
-        Default PIN is 1234. Ask an admin if you forgot yours.
+      <p className="text-xs font-medium text-muted-foreground">
+        Forgot your PIN? Ask a leader to reset it for you.
       </p>
     </form>
   )

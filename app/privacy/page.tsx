@@ -7,27 +7,21 @@ export const metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-orange-500/[0.07] blur-[100px]" />
-        <div className="absolute top-1/3 -right-32 w-64 h-64 rounded-full bg-blue-500/[0.05] blur-[80px]" />
-      </div>
-
+    <div className="min-h-screen bg-background relative">
       <div className="relative max-w-2xl mx-auto px-4 py-8 space-y-8">
         {/* Header */}
         <div className="space-y-4">
           <Link
             href="/"
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-orange-400 transition-colors"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="size-4 mr-1" />
             Back to Home
           </Link>
 
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-gradient-to-br from-orange-500/20 to-blue-500/20 p-3 ring-1 ring-white/[0.1]">
-              <Shield className="size-6 text-orange-400" />
+            <div className="rounded-xl bg-secondary border-2 border-foreground p-3">
+              <Shield className="size-6 text-accent" />
             </div>
             <div>
               <h1 className="text-2xl font-bold gradient-text">Privacy Policy</h1>
@@ -144,7 +138,7 @@ export default function PrivacyPolicyPage() {
             <p>
               For any privacy-related concerns or to exercise your data rights, contact:
             </p>
-            <div className="mt-2 p-4 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+            <div className="mt-2 p-4 rounded-lg bg-card border border-border/30">
               <p className="font-medium text-foreground">CTJCC Marikina Church Admin</p>
               <p className="text-muted-foreground">Email: samcataps@gmail.com</p>
             </div>
@@ -160,7 +154,7 @@ export default function PrivacyPolicyPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-muted-foreground/50">
+        <p className="text-center text-xs text-muted-foreground">
           Come To Jesus Community Church of Marikina
         </p>
       </div>
@@ -171,7 +165,7 @@ export default function PrivacyPolicyPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <h2 className="text-base font-semibold text-orange-400/80">{title}</h2>
+      <h2 className="text-base font-semibold text-accent/80">{title}</h2>
       {children}
     </div>
   )

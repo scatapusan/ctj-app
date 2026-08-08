@@ -14,7 +14,7 @@ import { EditProfile } from "@/components/attend/edit-profile"
 import { SuccessScreen } from "@/components/attend/success-screen"
 import { ProfileEmailLookup } from "@/components/attend/profile-email-lookup"
 import { StepIndicator, type AttendStage } from "@/components/attend/step-indicator"
-import { ArrowLeft, CheckCircle2, Sparkles, Pencil, Home, Loader2 } from "lucide-react"
+import { ArrowLeft, CheckCircle2, Pencil, Home, Loader2 } from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
@@ -39,6 +39,7 @@ function AttendPageContent() {
     eventParam ? "email-input" : "select-event"
   )
   const [eventId, setEventId] = useState<string>(eventParam || "")
+  const [eventName, setEventName] = useState<string>("")
   // `member` is the minimal summary for pre-edit screens; `editMember` is the
   // full PII record, fetched only after the PIN. `editPin` re-authorizes saves.
   const [member, setMember] = useState<MemberSummary | null>(null)
@@ -48,8 +49,9 @@ function AttendPageContent() {
   const [firstName, setFirstName] = useState("")
   const [returnToStep, setReturnToStep] = useState<FlowStep>("welcome-back")
 
-  function handleEventSelect(id: string) {
+  function handleEventSelect(id: string, name: string) {
     setEventId(id)
+    setEventName(name)
     setStep("email-input")
   }
 
@@ -65,6 +67,12 @@ function AttendPageContent() {
   }
 
   function handleGuestCheckIn() {
+    setStep("guest-form")
+  }
+
+  // Walk-in path straight from the event picker (no email lookup first).
+  function handleGuestFromEvent(id: string) {
+    setEventId(id)
     setStep("guest-form")
   }
 
@@ -206,26 +214,21 @@ function AttendPageContent() {
   const stage = currentStage()
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Animated background orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-orange-500/[0.07] blur-[100px] animate-float" />
-        <div className="absolute top-1/3 -right-32 w-64 h-64 rounded-full bg-blue-500/[0.05] blur-[80px] animate-float-slow" />
-        <div className="absolute -bottom-20 left-1/4 w-72 h-72 rounded-full bg-amber-600/[0.04] blur-[90px] animate-float" style={{ animationDelay: "2s" }} />
-      </div>
-
+    <div className="min-h-screen bg-background relative">
       <div className="relative max-w-md mx-auto px-4 py-8 space-y-6">
         {/* Header */}
-        <div className="text-center space-y-3 pt-2">
-          <div className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 p-4 ring-1 ring-white/[0.1] glow-orange">
-            <Sparkles className="size-8 text-orange-400" />
+        <div className="flex items-center justify-center gap-3 pt-2">
+          <div className="w-10 h-10 shrink-0 rounded-full bg-primary border-2 border-foreground flex items-center justify-center font-black text-[13px] text-foreground">
+            CTJ
           </div>
-          <h1 className="text-2xl font-bold tracking-tight gradient-text">
-            CTJCC Marikina
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Youth & Young Adult Attendance
-          </p>
+          <div className="text-left">
+            <h1 className="text-xl font-extrabold tracking-tight text-foreground leading-tight">
+              CTJCC Marikina
+            </h1>
+            <p className="text-xs font-semibold text-muted-foreground">
+              Youth &amp; Young Adult Attendance
+            </p>
+          </div>
         </div>
 
         {/* Step indicator (check-in flow only) */}
@@ -237,7 +240,7 @@ function AttendPageContent() {
             variant="ghost"
             size="sm"
             onClick={handleBack}
-            className="text-muted-foreground hover:text-orange-400 min-h-[44px]"
+            className="text-muted-foreground hover:text-foreground min-h-[44px]"
           >
             <ArrowLeft className="size-4 mr-1" />
             Back
@@ -247,24 +250,24 @@ function AttendPageContent() {
         {/* Flow content — glass card */}
         <div className="glass rounded-2xl p-6">
           {step === "select-event" && (
-            <div className="space-y-6">
-              <EventSelector onSelect={handleEventSelect} />
+            <div className="space-y-5">
+              <EventSelector onSelect={handleEventSelect} onGuest={handleGuestFromEvent} />
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-white/[0.06]" />
+                  <div className="w-full border-t-2 border-border/30" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-card px-3 text-muted-foreground/60">or</span>
+                  <span className="bg-card px-3 font-semibold text-muted-foreground">or</span>
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="lg"
-                className="w-full min-h-[44px] text-base text-muted-foreground hover:text-orange-400"
+                className="w-full min-h-[44px] text-base text-muted-foreground hover:text-foreground"
                 onClick={handleProfileLookup}
               >
                 <Pencil className="size-4 mr-2" />
-                Just Update My Profile
+                Update My Profile
               </Button>
             </div>
           )}
@@ -327,6 +330,7 @@ function AttendPageContent() {
           {step === "success" && (
             <SuccessScreen
               firstName={firstName}
+              eventName={eventName || undefined}
               onReset={handleReset}
               onEditProfile={member ? () => handleEditProfile("success") : undefined}
             />
@@ -334,14 +338,13 @@ function AttendPageContent() {
 
           {step === "profile-saved" && (
             <div className="flex flex-col items-center justify-center text-center space-y-6 py-8 relative">
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full bg-orange-500/10 blur-[60px] animate-pulse-glow" />
-              <div className="relative animate-check-scale">
-                <CheckCircle2 className="size-20 text-orange-400 drop-shadow-[0_0_20px_rgba(245,145,30,0.4)]" strokeWidth={1.5} />
+              <div className="animate-check-scale w-24 h-24 rounded-full bg-primary border-[2.5px] border-foreground shadow-pop flex items-center justify-center">
+                <CheckCircle2 className="size-12 text-foreground" strokeWidth={2} />
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-bold gradient-text">Profile Updated!</h2>
+                <h2 className="text-2xl font-extrabold text-foreground">Profile Updated!</h2>
                 <p className="text-lg text-muted-foreground">
-                  Looking good, <span className="font-semibold text-orange-400">{firstName}</span>!
+                  Looking good, <span className="font-bold text-accent">{firstName}</span>!
                 </p>
               </div>
               <Button
@@ -358,22 +361,22 @@ function AttendPageContent() {
           {step === "already-checked-in" && member && (
             <div className="flex flex-col items-center text-center space-y-4 py-6">
               <div className="relative">
-                <Avatar className="h-20 w-20 ring-2 ring-blue-500/30 shadow-glow-blue">
+                <Avatar className="h-20 w-20 border-2 border-foreground">
                   {member.photo_url ? (
                     <AvatarImage src={member.photo_url} alt={member.first_name} />
                   ) : null}
-                  <AvatarFallback className="text-xl font-semibold bg-blue-500/10 text-blue-400">
+                  <AvatarFallback className="text-xl font-bold bg-secondary text-foreground">
                     {(member.first_name?.[0] || "").toUpperCase()}{(member.last_name?.[0] || "").toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute -bottom-1 -right-1 rounded-full bg-blue-500 p-1.5 ring-2 ring-background">
-                  <CheckCircle2 className="size-3.5 text-white" />
+                <div className="absolute -bottom-1 -right-1 rounded-full bg-foreground p-1.5 ring-2 ring-card">
+                  <CheckCircle2 className="size-3.5 text-primary" />
                 </div>
               </div>
               <div className="space-y-1">
-                <h2 className="text-xl font-semibold">Already checked in!</h2>
-                <p className="text-muted-foreground">
-                  <span className="font-medium text-orange-400">{firstName}</span> is already marked present for this event.
+                <h2 className="text-xl font-extrabold">Already checked in!</h2>
+                <p className="text-muted-foreground font-medium">
+                  <span className="font-bold text-accent">{firstName}</span> is already marked present for this event.
                 </p>
               </div>
               <div className="w-full space-y-3 mt-2">
@@ -398,7 +401,7 @@ function AttendPageContent() {
                   <Button
                     variant="ghost"
                     size="lg"
-                    className="w-full min-h-[44px] text-base text-muted-foreground/70 hover:text-orange-400"
+                    className="w-full min-h-[44px] text-base text-muted-foreground hover:text-foreground"
                   >
                     <Home className="size-4 mr-2" />
                     Back to Home
@@ -410,9 +413,9 @@ function AttendPageContent() {
         </div>
 
         {/* Footer */}
-        <div className="text-center text-xs text-muted-foreground/50 space-y-1">
+        <div className="text-center text-xs font-semibold text-muted-foreground space-y-1">
           <p>Come To Jesus Community Church of Marikina</p>
-          <a href="/privacy" className="underline underline-offset-2 hover:text-muted-foreground/70">
+          <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">
             Privacy Policy
           </a>
         </div>

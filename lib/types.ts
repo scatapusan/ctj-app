@@ -52,11 +52,23 @@ export interface Member {
   updated_at: string
 }
 
+export type AttendanceStatus = "registered" | "attended"
+
+export type RetreatCategory = "youth" | "ya"
+
 export interface Attendance {
   id: string
   member_id: string
   event_id: string
   checked_in_at: string
+  /** 'registered' = pre-registered, not yet at the event. Default 'attended'. */
+  status: AttendanceStatus
+  attended_at: string | null
+  /** Event-scoped retreat registration answers (null outside retreat flows). */
+  category: RetreatCategory | null
+  baby_photo_url: string | null
+  guardian_name: string | null
+  guardian_contact: string | null
 }
 
 /**

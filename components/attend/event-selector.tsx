@@ -3,26 +3,44 @@
 import { useEffect, useState } from "react"
 import { createBrowserClient } from "@/lib/supabase"
 import type { Event } from "@/lib/types"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, CalendarDays } from "lucide-react"
+import { Loader2, CalendarDays, Check } from "lucide-react"
 
 interface EventSelectorProps {
-  onSelect: (eventId: string) => void
+  onSelect: (eventId: string, eventName: string) => void
+  /** Optional walk-in/first-timer path: called with the chosen event. */
+  onGuest?: (eventId: string) => void
 }
 
-export function EventSelector({ onSelect }: EventSelectorProps) {
+const FILIPINO_DAYS = [
+  "Linggo",
+  "Lunes",
+  "Martes",
+  "Miyerkules",
+  "Huwebes",
+  "Biyernes",
+  "Sabado",
+]
+
+function eventDateLine(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`)
+  if (isNaN(d.getTime())) return dateStr
+  const day = FILIPINO_DAYS[d.getDay()]
+  const today = new Date()
+  const isToday =
+    d.getFullYear() === today.getFullYear() &&
+    d.getMonth() === today.getMonth() &&
+    d.getDate() === today.getDate()
+  const md = d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  return isToday ? `Today · ${day}` : `${md} · ${day}`
+}
+
+export function EventSelector({ onSelect, onGuest }: EventSelectorProps) {
   const [events, setEvents] = useState<Pick<Event, "id" | "name" | "event_date" | "is_active">[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
+  const [needsChoice, setNeedsChoice] = useState(false)
 
   useEffect(() => {
     async function fetchEvents() {
@@ -49,15 +67,15 @@ export function EventSelector({ onSelect }: EventSelectorProps) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <Loader2 className="size-8 animate-spin text-orange-400" />
-        <p className="mt-3 text-sm">Loading events...</p>
+        <Loader2 className="size-8 animate-spin text-foreground" />
+        <p className="mt-3 text-sm font-medium">Loading events...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-center text-sm text-red-400">
+      <div className="rounded-xl border-2 border-destructive/40 bg-destructive/10 p-4 text-center text-sm font-semibold text-destructive">
         {error}
       </div>
     )
@@ -66,45 +84,83 @@ export function EventSelector({ onSelect }: EventSelectorProps) {
   if (events.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <CalendarDays className="size-10 mb-3 text-muted-foreground/50" />
-        <p className="text-sm">No active events right now.</p>
-        <p className="text-xs mt-1 text-muted-foreground/70">Check back later!</p>
+        <CalendarDays className="size-10 mb-3" />
+        <p className="text-sm font-semibold">No active events right now.</p>
+        <p className="text-xs mt-1">Check back later!</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-5">
-      <div className="space-y-2">
-        <Label htmlFor="event-select" className="text-muted-foreground">
-          Select an Event
-        </Label>
-        <Select
-          value={selectedId}
-          onValueChange={(val) => setSelectedId(val as string)}
-        >
-          <SelectTrigger className="w-full h-12 text-base">
-            <SelectValue placeholder="Choose an event..." />
-          </SelectTrigger>
-          <SelectContent>
-            {events.map((event) => (
-              <SelectItem key={event.id} value={event.id}>
-                {event.name} — {event.event_date}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <h2 className="text-2xl font-extrabold leading-tight text-foreground">
+        Which event are you here for?
+      </h2>
+
+      <div className="flex flex-col gap-3" role="radiogroup" aria-label="Select an event">
+        {events.map((event) => {
+          const selected = event.id === selectedId
+          return (
+            <button
+              key={event.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => { setSelectedId(event.id); setNeedsChoice(false) }}
+              className={
+                selected
+                  ? "min-h-[64px] rounded-2xl bg-secondary border-[2.5px] border-foreground shadow-pop px-4 py-3 flex items-center justify-between text-left transition-all"
+                  : "min-h-[64px] rounded-2xl bg-card border-2 border-foreground px-4 py-3 flex items-center justify-between text-left transition-all hover:bg-secondary/50"
+              }
+            >
+              <div>
+                <div className={`text-base ${selected ? "font-extrabold" : "font-bold"} text-foreground`}>
+                  {event.name}
+                </div>
+                <div className="text-[13px] font-semibold text-muted-foreground mt-0.5">
+                  {eventDateLine(event.event_date)}
+                </div>
+              </div>
+              {selected && (
+                <span className="w-[26px] h-[26px] shrink-0 rounded-full bg-foreground text-primary flex items-center justify-center">
+                  <Check className="size-4" strokeWidth={3.5} />
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
+      {needsChoice && (
+        <p className="text-sm font-semibold text-destructive text-center" role="alert">
+          Pick an event first, then tap Continue.
+        </p>
+      )}
+
       <Button
-        variant="gradient"
         size="lg"
-        className="w-full min-h-[48px] text-base font-semibold"
+        className="w-full min-h-[52px] text-lg"
         disabled={!selectedId}
-        onClick={() => onSelect(selectedId)}
+        onClick={() => onSelect(selectedId, events.find((e) => e.id === selectedId)?.name ?? "")}
       >
         Continue
       </Button>
+
+      {onGuest && (
+        <button
+          type="button"
+          className="w-full min-h-[44px] text-center text-sm font-bold text-accent underline underline-offset-[3px] hover:text-accent/80"
+          onClick={() => {
+            if (!selectedId) {
+              setNeedsChoice(true)
+              return
+            }
+            onGuest(selectedId)
+          }}
+        >
+          First time or walk-in guest? Start here
+        </button>
+      )}
     </div>
   )
 }

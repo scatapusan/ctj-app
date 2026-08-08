@@ -32,7 +32,7 @@ export function DashboardSkeleton() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/[0.02]"
+              className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50"
             >
               <div className="space-y-1.5">
                 <Skeleton className="h-4 w-32" />

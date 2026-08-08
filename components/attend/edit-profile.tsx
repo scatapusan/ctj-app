@@ -280,7 +280,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="edit-first-name" className="text-muted-foreground">
-              First Name <span className="text-orange-400">*</span>
+              First Name <span className="text-accent">*</span>
             </Label>
             <Input
               id="edit-first-name"
@@ -290,12 +290,12 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
               aria-invalid={!!fieldErrors.firstName}
             />
             {fieldErrors.firstName && (
-              <p className="text-xs text-red-400">{fieldErrors.firstName}</p>
+              <p className="text-xs text-destructive">{fieldErrors.firstName}</p>
             )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="edit-last-name" className="text-muted-foreground">
-              Last Name <span className="text-orange-400">*</span>
+              Last Name <span className="text-accent">*</span>
             </Label>
             <Input
               id="edit-last-name"
@@ -305,7 +305,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
               aria-invalid={!!fieldErrors.lastName}
             />
             {fieldErrors.lastName && (
-              <p className="text-xs text-red-400">{fieldErrors.lastName}</p>
+              <p className="text-xs text-destructive">{fieldErrors.lastName}</p>
             )}
           </div>
         </div>
@@ -339,7 +339,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
               id="edit-gender"
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="flex w-full h-12 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-base text-foreground ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 focus-visible:border-orange-500/50"
+              className="flex w-full h-12 rounded-xl border-2 border-input bg-card px-3 py-2 text-base text-foreground ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-foreground"
             >
               <option value="" className="bg-card">Select</option>
               <option value="Male" className="bg-card">Male</option>
@@ -369,7 +369,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
           />
           {age !== null && age >= 0 && (
             <p className="text-sm text-muted-foreground">
-              Age: <span className="font-medium text-orange-400">{age} years old</span>
+              Age: <span className="font-medium text-accent">{age} years old</span>
             </p>
           )}
         </div>
@@ -387,7 +387,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Social & Address */}
       <section className="space-y-4">
@@ -416,7 +416,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Family */}
       <section className="space-y-4">
@@ -446,7 +446,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Emergency Contact */}
       <section className="space-y-4">
@@ -477,7 +477,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Photo */}
       <section className="space-y-4">
@@ -497,12 +497,12 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
             <img
               src={photoPreview}
               alt="Preview"
-              className="w-full h-full rounded-xl object-cover ring-2 ring-orange-500/30"
+              className="w-full h-full rounded-xl object-cover ring-2 ring-foreground"
             />
             <button
               type="button"
               onClick={removePhoto}
-              className="absolute -top-2 -right-2 rounded-full bg-red-500 text-white p-1 shadow-lg hover:bg-red-400 transition-colors"
+              className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground p-1 border-2 border-card hover:bg-destructive/90 transition-colors"
             >
               <X className="size-4" />
             </button>
@@ -511,9 +511,9 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-orange-500/20 py-8 text-muted-foreground hover:border-orange-500/40 hover:text-orange-400 transition-all duration-300 group"
+            className="w-full flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-border py-8 text-muted-foreground hover:border-foreground hover:text-foreground transition-all duration-300 group"
           >
-            <div className="rounded-full bg-orange-500/10 p-3 group-hover:bg-orange-500/20 transition-colors">
+            <div className="rounded-full bg-secondary p-3 group-hover:bg-secondary transition-colors">
               <Camera className="size-6" />
             </div>
             <span className="text-sm font-medium">Tap to take or upload a photo</span>
@@ -521,7 +521,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
         )}
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Discipleship */}
       <section className="space-y-4">
@@ -561,7 +561,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Lifeline */}
       <section className="space-y-4">
@@ -598,7 +598,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Ministry */}
       <section className="space-y-4">
@@ -616,14 +616,14 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Status Toggles */}
       <section className="space-y-4">
         <SectionHeader>Status</SectionHeader>
 
         <div className="space-y-3">
-          <p className="text-xs text-orange-400/70 font-medium uppercase tracking-wider">
+          <p className="text-xs text-accent/70 font-medium uppercase tracking-wider">
             Completed Seminars
           </p>
 
@@ -632,13 +632,13 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
           <ToggleRow label="Freedom Day" checked={completedFreedomDay} onCheckedChange={setCompletedFreedomDay} />
           <ToggleRow label="Grand Day" checked={completedGrandDay} onCheckedChange={setCompletedGrandDay} />
 
-          <div className="h-px bg-white/[0.06]" />
+          <div className="h-px bg-secondary/60" />
 
           <ToggleRow label="Baptized in Water" checked={baptizedInWater} onCheckedChange={setBaptizedInWater} />
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Change PIN */}
       <section className="space-y-4">
@@ -656,7 +656,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
             Change My PIN
           </Button>
         ) : (
-          <div className="space-y-3 rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+          <div className="space-y-3 rounded-xl bg-muted/50 border border-border/30 p-4">
             <div className="space-y-1.5">
               <Label htmlFor="current-pin" className="text-muted-foreground">Current PIN</Label>
               <Input
@@ -700,10 +700,10 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
             </div>
 
             {pinError && (
-              <p className="text-sm text-red-400">{pinError}</p>
+              <p className="text-sm text-destructive">{pinError}</p>
             )}
             {pinSuccess && (
-              <p className="text-sm text-orange-400">PIN updated successfully!</p>
+              <p className="text-sm text-accent">PIN updated successfully!</p>
             )}
 
             <div className="flex gap-2">
@@ -743,7 +743,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
       </section>
 
       {error && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -786,7 +786,7 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider">
+    <h3 className="text-xs font-semibold text-accent/80 uppercase tracking-wider">
       {children}
     </h3>
   )

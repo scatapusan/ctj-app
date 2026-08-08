@@ -8,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -49,9 +52,13 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        glow: "0 0 20px rgba(245, 145, 30, 0.25), 0 0 60px rgba(245, 145, 30, 0.1)",
-        "glow-sm": "0 0 10px rgba(245, 145, 30, 0.2)",
-        "glow-blue": "0 0 20px rgba(30, 95, 175, 0.25), 0 0 60px rgba(30, 95, 175, 0.1)",
+        // Barkada hard offset shadows (legacy "glow" names kept so existing
+        // usages restyle automatically — there is no glow in this theme).
+        glow: "3px 3px 0 0 #1F2B4D",
+        "glow-sm": "2px 2px 0 0 #1F2B4D",
+        "glow-blue": "3px 3px 0 0 #56618A",
+        pop: "3px 3px 0 0 #1F2B4D",
+        "pop-sm": "2px 2px 0 0 #1F2B4D",
       },
       keyframes: {
         "accordion-down": {
