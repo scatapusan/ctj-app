@@ -45,13 +45,13 @@ export function Sidebar() {
     <>
       {/* Logo */}
       <div className="px-4 py-6 flex items-center gap-3">
-        <div className="rounded-xl bg-gradient-to-br from-orange-500/20 to-blue-500/20 p-2.5 ring-1 ring-white/[0.1]">
-          <Sparkles className="size-5 text-orange-400" />
+        <div className="rounded-full bg-primary border-2 border-foreground p-2.5">
+          <Sparkles className="size-5 text-accent" />
         </div>
         <div>
           <p className="text-sm font-bold gradient-text">CTJCC Marikina</p>
           <p className="text-[10px] text-muted-foreground">
-            {isSuperadmin ? "Superadmin" : isCore ? "Core Leader" : "Dashboard"}
+            {isSuperadmin ? "Admin" : isCore ? "Core Leader" : "Dashboard"}
           </p>
         </div>
       </div>
@@ -69,8 +69,8 @@ export function Sidebar() {
               aria-current={active ? "page" : undefined}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 active
-                  ? "bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+                  ? "bg-primary text-foreground font-bold border-2 border-foreground"
+                  : "text-muted-foreground font-semibold hover:text-foreground hover:bg-secondary/60 border-2 border-transparent"
               }`}
             >
               <Icon className="size-4" />
@@ -81,18 +81,18 @@ export function Sidebar() {
       </nav>
 
       {/* Footer actions */}
-      <div className="px-3 pb-4 space-y-1 border-t border-white/[0.04] pt-3">
+      <div className="px-3 pb-4 space-y-1 border-t border-border/30 pt-3">
         <Link
           href="/"
           onClick={() => setMobileOpen(false)}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-orange-400 hover:bg-white/[0.04] transition-all duration-200 w-full"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-card transition-all duration-200 w-full"
         >
           <Home className="size-4" />
           Back to site
         </Link>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 w-full"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 w-full"
         >
           <LogOut className="size-4" />
           Logout
@@ -109,7 +109,7 @@ export function Sidebar() {
         size="sm"
         aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
         aria-expanded={mobileOpen}
-        className="fixed top-3 left-3 z-50 lg:hidden min-h-[44px] min-w-[44px] glass border border-white/[0.06]"
+        className="fixed top-3 left-3 z-50 lg:hidden min-h-[44px] min-w-[44px] glass border border-border/30"
         onClick={() => setMobileOpen(!mobileOpen)}
       >
         {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -118,14 +118,14 @@ export function Sidebar() {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          className="fixed inset-0 bg-foreground/40 z-40 lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Sidebar - mobile: slide in, desktop: fixed */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-card/80 backdrop-blur-xl border-r border-white/[0.06] z-40 flex flex-col transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full w-64 bg-card border-r-2 border-foreground z-40 flex flex-col transition-transform duration-300 lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

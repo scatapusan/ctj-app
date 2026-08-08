@@ -24,8 +24,8 @@ export function QrModal({ eventName, eventId, baseUrl, onClose }: QrModalProps) 
         width: 280,
         margin: 2,
         color: {
-          dark: "#f59120",
-          light: "#0a0a12",
+          dark: "#1F2B4D",
+          light: "#FFFDF6",
         },
       }).catch(() => setError("Failed to generate QR code."))
     }
@@ -62,7 +62,7 @@ export function QrModal({ eventName, eventId, baseUrl, onClose }: QrModalProps) 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="absolute inset-0 bg-foreground/40" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative glass rounded-2xl p-6 max-w-sm w-full space-y-5 animate-check-scale">
@@ -80,13 +80,13 @@ export function QrModal({ eventName, eventId, baseUrl, onClose }: QrModalProps) 
 
         <div className="flex justify-center">
           {error ? (
-            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
           ) : (
             <canvas ref={canvasRef} className="rounded-xl" />
           )}
         </div>
 
-        <p className="text-[10px] text-muted-foreground/50 text-center break-all">{attendUrl}</p>
+        <p className="text-[10px] text-muted-foreground text-center break-all">{attendUrl}</p>
 
         <div className="flex gap-3">
           <Button

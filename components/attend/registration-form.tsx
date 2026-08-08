@@ -221,7 +221,7 @@ export function RegistrationForm({
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="first-name" className="text-muted-foreground">
-              First Name <span className="text-orange-400">*</span>
+              First Name <span className="text-accent">*</span>
             </Label>
             <Input
               id="first-name"
@@ -232,12 +232,12 @@ export function RegistrationForm({
               aria-invalid={!!fieldErrors.firstName}
             />
             {fieldErrors.firstName && (
-              <p className="text-xs text-red-400">{fieldErrors.firstName}</p>
+              <p className="text-xs text-destructive">{fieldErrors.firstName}</p>
             )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="last-name" className="text-muted-foreground">
-              Last Name <span className="text-orange-400">*</span>
+              Last Name <span className="text-accent">*</span>
             </Label>
             <Input
               id="last-name"
@@ -248,7 +248,7 @@ export function RegistrationForm({
               aria-invalid={!!fieldErrors.lastName}
             />
             {fieldErrors.lastName && (
-              <p className="text-xs text-red-400">{fieldErrors.lastName}</p>
+              <p className="text-xs text-destructive">{fieldErrors.lastName}</p>
             )}
           </div>
         </div>
@@ -270,7 +270,7 @@ export function RegistrationForm({
               id="nickname"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
-              placeholder="What people call you"
+              placeholder="e.g. JD"
               className="h-12 text-base"
             />
           </div>
@@ -283,7 +283,7 @@ export function RegistrationForm({
               id="gender"
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="flex w-full h-12 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-base text-foreground ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 focus-visible:border-orange-500/50"
+              className="flex w-full h-12 rounded-xl border-2 border-input bg-card px-3 py-2 text-base text-foreground ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-foreground"
             >
               <option value="" className="bg-card">Select</option>
               <option value="Male" className="bg-card">Male</option>
@@ -313,7 +313,7 @@ export function RegistrationForm({
           />
           {age !== null && age >= 0 && (
             <p className="text-sm text-muted-foreground">
-              Age: <span className="font-medium text-orange-400">{age} years old</span>
+              Age: <span className="font-medium text-accent">{age} years old</span>
             </p>
           )}
         </div>
@@ -331,7 +331,7 @@ export function RegistrationForm({
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Social & Address */}
       <section className="space-y-4">
@@ -343,7 +343,7 @@ export function RegistrationForm({
             id="facebook"
             value={facebookLink}
             onChange={(e) => setFacebookLink(e.target.value)}
-            placeholder="facebook.com/yourname or your display name"
+            placeholder="facebook.com/yourname"
             className="h-12 text-base"
           />
         </div>
@@ -360,7 +360,7 @@ export function RegistrationForm({
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Family */}
       <section className="space-y-4">
@@ -390,7 +390,7 @@ export function RegistrationForm({
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Emergency Contact */}
       <section className="space-y-4">
@@ -421,7 +421,7 @@ export function RegistrationForm({
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Photo */}
       <section className="space-y-4">
@@ -441,12 +441,12 @@ export function RegistrationForm({
             <img
               src={photoPreview}
               alt="Preview"
-              className="w-full h-full rounded-xl object-cover ring-2 ring-orange-500/30"
+              className="w-full h-full rounded-xl object-cover ring-2 ring-foreground"
             />
             <button
               type="button"
               onClick={removePhoto}
-              className="absolute -top-2 -right-2 rounded-full bg-red-500 text-white p-1 shadow-lg hover:bg-red-400 transition-colors"
+              className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground p-1 border-2 border-card hover:bg-destructive/90 transition-colors"
             >
               <X className="size-4" />
             </button>
@@ -455,9 +455,9 @@ export function RegistrationForm({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-orange-500/20 py-8 text-muted-foreground hover:border-orange-500/40 hover:text-orange-400 transition-all duration-300 group"
+            className="w-full flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-border py-8 text-muted-foreground hover:border-foreground hover:text-foreground transition-all duration-300 group"
           >
-            <div className="rounded-full bg-orange-500/10 p-3 group-hover:bg-orange-500/20 transition-colors">
+            <div className="rounded-full bg-secondary p-3 group-hover:bg-secondary transition-colors">
               <Camera className="size-6" />
             </div>
             <span className="text-sm font-medium">Tap to take or upload a photo</span>
@@ -465,7 +465,7 @@ export function RegistrationForm({
         )}
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Discipleship */}
       <section className="space-y-4">
@@ -505,7 +505,7 @@ export function RegistrationForm({
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Lifeline */}
       <section className="space-y-4">
@@ -542,7 +542,7 @@ export function RegistrationForm({
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Ministry */}
       <section className="space-y-4">
@@ -560,14 +560,14 @@ export function RegistrationForm({
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Status Toggles */}
       <section className="space-y-4">
         <SectionHeader>Status</SectionHeader>
 
         <div className="space-y-3">
-          <p className="text-xs text-orange-400/70 font-medium uppercase tracking-wider">
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
             Completed Seminars
           </p>
 
@@ -592,7 +592,7 @@ export function RegistrationForm({
             onCheckedChange={setCompletedGrandDay}
           />
 
-          <div className="h-px bg-white/[0.06]" />
+          <div className="h-px bg-secondary/60" />
 
           <ToggleRow
             label="Baptized in Water"
@@ -602,13 +602,14 @@ export function RegistrationForm({
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* PIN Setup */}
       <section className="space-y-4">
         <SectionHeader>Security PIN</SectionHeader>
-        <p className="text-xs text-muted-foreground">
-          Set a 4-digit PIN to protect your profile. Leave blank to use the default (1234).
+        <p className="text-xs font-medium text-muted-foreground">
+          Set a 4-digit PIN to protect your profile. If you skip this, a starter
+          PIN is assigned — ask a leader to help you change it anytime.
         </p>
         <div className="space-y-1.5">
           <Label htmlFor="pin" className="text-muted-foreground">
@@ -622,54 +623,53 @@ export function RegistrationForm({
             maxLength={4}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            placeholder="1234 (default)"
+            placeholder="4 digits"
             className="h-12 text-base tracking-widest text-center max-w-[200px]"
           />
         </div>
       </section>
 
-      <Separator className="bg-white/[0.06]" />
+      <Separator className="bg-secondary/60" />
 
       {/* Privacy Consent */}
       <section className="space-y-3">
         <p className="text-xs text-muted-foreground leading-relaxed">
           Your information is collected for church attendance tracking and member care by CTJCC Marikina.
         </p>
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 rounded-xl border-2 border-foreground bg-secondary/50 p-4">
           <Checkbox
             id="privacy-consent"
             checked={privacyConsent}
             onCheckedChange={(checked) => setPrivacyConsent(checked === true)}
             className="mt-0.5"
           />
-          <label htmlFor="privacy-consent" className="text-sm text-foreground/80 leading-relaxed cursor-pointer">
+          <label htmlFor="privacy-consent" className="text-sm font-medium text-foreground leading-relaxed cursor-pointer">
             I have read and agree to the{" "}
             <a
               href="/privacy"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-orange-400 underline underline-offset-2 hover:text-orange-300"
+              className="text-accent underline underline-offset-2 hover:text-accent"
             >
               Privacy Policy
             </a>
           </label>
         </div>
         {fieldErrors.privacy && (
-          <p className="text-xs text-red-400">{fieldErrors.privacy}</p>
+          <p className="text-xs text-destructive">{fieldErrors.privacy}</p>
         )}
       </section>
 
       {error && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
       <Button
         type="submit"
-        variant="gradient"
         size="lg"
-        className="w-full min-h-[52px] text-lg font-semibold"
+        className="w-full min-h-[52px] text-lg"
         disabled={loading}
       >
         {loading ? (
@@ -690,7 +690,7 @@ export function RegistrationForm({
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-semibold text-orange-400/80 uppercase tracking-wider">
+    <h3 className="text-sm font-extrabold text-foreground uppercase tracking-wider">
       {children}
     </h3>
   )

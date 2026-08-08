@@ -5,26 +5,30 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-bold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none active:scale-[0.98] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow-sm hover:shadow-glow",
+        default:
+          "bg-primary text-primary-foreground border-2 border-foreground shadow-pop hover:bg-[#FFD166]",
+        // Legacy name from the old theme; now identical to the primary pill so
+        // existing `variant="gradient"` call sites restyle automatically.
         gradient:
-          "bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-400 hover:to-amber-400 shadow-glow-sm hover:shadow-glow",
+          "bg-primary text-primary-foreground border-2 border-foreground shadow-pop hover:bg-[#FFD166]",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground border-2 border-foreground shadow-pop hover:bg-destructive/90",
         outline:
-          "border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/[0.15] text-foreground",
+          "border-2 border-foreground bg-card text-foreground hover:bg-secondary/60",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-white/[0.06] text-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-secondary text-secondary-foreground border-2 border-border hover:bg-secondary/70",
+        ghost:
+          "text-foreground font-semibold hover:bg-foreground/[0.06] active:translate-x-0 active:translate-y-0",
+        link: "text-accent font-semibold underline underline-offset-4 hover:text-accent/80 active:translate-x-0 active:translate-y-0",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-lg px-8",
+        default: "h-10 px-5 py-2",
+        sm: "h-9 px-4",
+        lg: "h-12 px-8",
         icon: "h-10 w-10",
       },
     },

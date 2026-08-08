@@ -34,8 +34,8 @@ export function ListSkeleton({ rows = 6, showSearch = true }: ListSkeletonProps)
       </div>
 
       {/* Desktop table */}
-      <div className="hidden lg:block rounded-xl border border-white/[0.06] overflow-hidden">
-        <div className="bg-white/[0.02] border-b border-white/[0.06] px-4 py-3 flex gap-6">
+      <div className="hidden lg:block rounded-xl border border-border/30 overflow-hidden">
+        <div className="bg-muted/50 border-b border-border/30 px-4 py-3 flex gap-6">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-3 w-20" />
           ))}
@@ -43,7 +43,7 @@ export function ListSkeleton({ rows = 6, showSearch = true }: ListSkeletonProps)
         {Array.from({ length: rows }).map((_, i) => (
           <div
             key={i}
-            className="px-4 py-3 border-b border-white/[0.04] flex gap-6 items-center"
+            className="px-4 py-3 border-b border-border/30 flex gap-6 items-center"
           >
             {Array.from({ length: 5 }).map((_, j) => (
               <Skeleton key={j} className="h-4 w-20" />

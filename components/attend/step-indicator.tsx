@@ -5,7 +5,7 @@ export type AttendStage = "event" | "identify" | "confirm" | "done"
 
 const STAGES: { id: AttendStage; label: string }[] = [
   { id: "event", label: "Event" },
-  { id: "identify", label: "Identify" },
+  { id: "identify", label: "You" },
   { id: "confirm", label: "Confirm" },
   { id: "done", label: "Done" },
 ]
@@ -40,23 +40,23 @@ export function StepIndicator({ current }: StepIndicatorProps) {
               <div
                 aria-current={isActive ? "step" : undefined}
                 className={cn(
-                  "size-7 rounded-full flex items-center justify-center text-[11px] font-semibold transition-all duration-300 ring-1",
+                  "size-7 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300 border-2",
                   isComplete &&
-                    "bg-orange-500/20 text-orange-300 ring-orange-500/40",
+                    "bg-primary border-foreground text-foreground",
                   isActive &&
-                    "bg-gradient-to-br from-orange-500 to-amber-500 text-white ring-orange-400/60 scale-110 shadow-lg shadow-orange-500/30",
+                    "bg-primary border-foreground text-foreground scale-110 shadow-pop-sm",
                   isUpcoming &&
-                    "bg-white/[0.04] text-muted-foreground/60 ring-white/[0.06]"
+                    "bg-card border-border text-muted-foreground"
                 )}
               >
-                {isComplete ? <Check className="size-3.5" /> : i + 1}
+                {isComplete ? <Check className="size-3.5" strokeWidth={3} /> : i + 1}
               </div>
               <span
                 className={cn(
-                  "text-[10px] font-medium transition-colors",
-                  isActive && "text-orange-400",
-                  isComplete && "text-foreground/70",
-                  isUpcoming && "text-muted-foreground/50"
+                  "text-[11px] font-bold transition-colors",
+                  isActive && "text-foreground",
+                  isComplete && "text-foreground",
+                  isUpcoming && "text-muted-foreground"
                 )}
               >
                 {stage.label}
@@ -67,10 +67,8 @@ export function StepIndicator({ current }: StepIndicatorProps) {
               <div
                 aria-hidden="true"
                 className={cn(
-                  "h-px w-6 sm:w-10 -mt-4 transition-colors",
-                  i < currentIdx
-                    ? "bg-orange-500/40"
-                    : "bg-white/[0.06]"
+                  "h-0.5 w-6 sm:w-10 -mt-4 transition-colors",
+                  i < currentIdx ? "bg-foreground" : "bg-foreground/25"
                 )}
               />
             )}

@@ -1,60 +1,61 @@
 import Link from "next/link"
-import { Sparkles, ClipboardCheck, Shield } from "lucide-react"
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
-      {/* Animated background orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-orange-500/[0.07] blur-[100px] animate-float" />
-        <div className="absolute top-1/3 -right-32 w-64 h-64 rounded-full bg-blue-500/[0.05] blur-[80px] animate-float-slow" />
-        <div className="absolute -bottom-20 left-1/4 w-72 h-72 rounded-full bg-amber-600/[0.04] blur-[90px] animate-float" style={{ animationDelay: "2s" }} />
-      </div>
-
-      <main className="relative flex-1 flex flex-col items-center justify-center px-4 py-12">
-        <div className="text-center space-y-6 max-w-md">
-          {/* Logo */}
-          <div className="inline-flex items-center justify-center rounded-3xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 p-6 ring-1 ring-white/[0.1] glow-orange">
-            <Sparkles className="size-12 text-orange-400" />
+    <div className="min-h-screen bg-background flex flex-col">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+        <div className="text-center space-y-0 max-w-md w-full flex flex-col items-center">
+          {/* CTJ badge */}
+          <div className="w-[76px] h-[76px] rounded-full bg-primary border-[2.5px] border-foreground flex items-center justify-center font-black text-2xl tracking-tight text-foreground">
+            CTJ
           </div>
 
           {/* Title */}
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight gradient-text">
-              CTJCC Marikina
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              Youth & Young Adult Ministry
-            </p>
+          <h1 className="font-black text-4xl text-foreground mt-4 tracking-tight">
+            CTJCC Marikina
+          </h1>
+          <div className="inline-flex mt-3 px-3.5 py-1.5 rounded-full bg-foreground text-background text-xs font-bold tracking-wider uppercase">
+            Youth &amp; Young Adults · Marikina
           </div>
+          <p className="text-[15px] text-muted-foreground leading-relaxed mt-4 max-w-[290px] text-balance">
+            Attendance and events for our youth ministry. Check in when you
+            arrive — kita-kits!
+          </p>
 
           {/* Buttons */}
-          <div className="space-y-4 pt-6">
+          <div className="flex flex-col gap-3 w-full mt-7">
             <Link
               href="/attend"
-              className="flex items-center justify-center gap-3 w-full rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold text-lg py-5 px-6 shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 hover:scale-[1.02] transition-all duration-200"
+              className="flex items-center justify-center w-full min-h-[54px] rounded-full bg-primary border-[2.5px] border-foreground text-foreground font-extrabold text-lg shadow-pop transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
             >
-              <ClipboardCheck className="size-6" />
-              Check In / Attend
+              Check In
             </Link>
-
             <Link
-              href="/admin"
-              className="flex items-center justify-center gap-3 w-full rounded-2xl border border-white/[0.1] bg-white/[0.04] text-foreground/80 font-medium text-base py-4 px-6 hover:bg-white/[0.08] hover:border-white/[0.15] transition-all duration-200"
+              href="/attend"
+              className="flex items-center justify-center w-full min-h-[54px] rounded-full bg-background border-[2.5px] border-foreground text-foreground font-bold text-lg hover:bg-secondary/60 transition-colors"
             >
-              <Shield className="size-5" />
-              Admin / Core Dashboard
+              I&apos;m New Here
             </Link>
           </div>
+
+          <Link
+            href="/admin/login"
+            className="text-sm font-bold text-accent mt-6 underline underline-offset-[3px] hover:text-accent/80"
+          >
+            Leader sign-in
+          </Link>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative text-center py-6 px-4">
-        <p className="text-xs text-muted-foreground/50">
+      <footer className="text-center py-5 px-6 border-t-2 border-foreground">
+        <p className="text-xs font-semibold text-muted-foreground leading-relaxed">
           Come To Jesus Community Church of Marikina
         </p>
-        <a href="/privacy" className="text-xs text-muted-foreground/40 underline underline-offset-2 hover:text-muted-foreground/60">
+        <a
+          href="/privacy"
+          className="text-xs font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground"
+        >
           Privacy Policy
         </a>
       </footer>

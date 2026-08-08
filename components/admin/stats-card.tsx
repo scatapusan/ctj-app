@@ -9,9 +9,9 @@ interface StatsCardProps {
 
 export function StatsCard({ label, value, icon: Icon, accent = "orange" }: StatsCardProps) {
   const colors = {
-    orange: "text-orange-400 bg-orange-500/10 ring-orange-500/20",
-    blue: "text-blue-400 bg-blue-500/10 ring-blue-500/20",
-    amber: "text-amber-400 bg-amber-500/10 ring-amber-500/20",
+    orange: "text-accent bg-secondary ring-foreground",
+    blue: "text-muted-foreground bg-muted ring-border",
+    amber: "text-accent bg-secondary ring-border",
   }
 
   return (

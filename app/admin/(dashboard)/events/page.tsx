@@ -179,7 +179,7 @@ export default function EventsPage() {
       {showForm && (
         <div className="glass rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-orange-400/80 uppercase tracking-wider">
+            <h2 className="text-sm font-semibold text-accent/80 uppercase tracking-wider">
               {editingId ? "Edit Event" : "New Event"}
             </h2>
             <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground">
@@ -190,7 +190,7 @@ export default function EventsPage() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="event-name" className="text-muted-foreground">
-                Event Name <span className="text-orange-400 font-bold">*</span>
+                Event Name <span className="text-accent font-bold">*</span>
               </Label>
               <Input
                 id="event-name"
@@ -203,7 +203,7 @@ export default function EventsPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="event-date" className="text-muted-foreground">
-                Date <span className="text-orange-400 font-bold">*</span>
+                Date <span className="text-accent font-bold">*</span>
               </Label>
               <Input
                 id="event-date"
@@ -235,7 +235,7 @@ export default function EventsPage() {
           </div>
 
           {formError && (
-            <p className="text-sm text-red-400">{formError}</p>
+            <p className="text-sm text-destructive">{formError}</p>
           )}
 
           <Button variant="gradient" onClick={handleSave} disabled={saving}>
@@ -267,8 +267,8 @@ export default function EventsPage() {
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                       event.is_active
-                        ? "bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20"
-                        : "bg-white/[0.04] text-muted-foreground ring-1 ring-white/[0.08]"
+                        ? "bg-secondary text-accent ring-1 ring-foreground"
+                        : "bg-card text-muted-foreground ring-1 ring-border/40"
                     }`}
                   >
                     {event.is_active ? "Active" : "Inactive"}
@@ -282,7 +282,7 @@ export default function EventsPage() {
                   <span>{event.attendance_count} checked in</span>
                 </div>
                 {event.description && (
-                  <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-1">
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
                     {event.description}
                   </p>
                 )}
@@ -314,7 +314,7 @@ export default function EventsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-400 hover:text-red-300 text-xs"
+                        className="text-destructive hover:text-destructive text-xs"
                         onClick={() => handleDelete(event.id)}
                       >
                         Confirm
@@ -332,7 +332,7 @@ export default function EventsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-muted-foreground hover:text-red-400"
+                      className="text-muted-foreground hover:text-destructive"
                       onClick={() => setDeletingId(event.id)}
                       title="Delete"
                     >

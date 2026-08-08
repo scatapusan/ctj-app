@@ -85,17 +85,16 @@ export function EmailLookup({
     return (
       <div className="space-y-5 text-center">
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            No account found for <span className="text-orange-400 font-medium">{notFoundEmail}</span>
+          <p className="text-sm font-medium text-muted-foreground">
+            No account found for <span className="text-accent font-bold">{notFoundEmail}</span>
           </p>
-          <p className="text-sm text-muted-foreground">How would you like to proceed?</p>
+          <p className="text-sm font-medium text-muted-foreground">How would you like to proceed?</p>
         </div>
 
         <div className="space-y-3">
           <Button
-            variant="gradient"
             size="lg"
-            className="w-full min-h-[48px] text-base font-semibold"
+            className="w-full min-h-[48px] text-base"
             onClick={() => onNewMember(notFoundEmail)}
           >
             <UserPlus className="size-4 mr-2" />
@@ -104,10 +103,10 @@ export function EmailLookup({
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/[0.06]" />
+              <div className="w-full border-t-2 border-border/30" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-card px-3 text-muted-foreground/60">or</span>
+              <span className="bg-card px-3 font-semibold text-muted-foreground">or</span>
             </div>
           </div>
 
@@ -141,7 +140,7 @@ export function EmailLookup({
           Email Address
         </Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-orange-400/60" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             id="email"
             type="email"
@@ -157,14 +156,13 @@ export function EmailLookup({
       </div>
 
       {error && (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm font-semibold text-destructive" role="alert">{error}</p>
       )}
 
       <Button
         type="submit"
-        variant="gradient"
         size="lg"
-        className="w-full min-h-[48px] text-base font-semibold"
+        className="w-full min-h-[48px] text-base"
         disabled={loading}
       >
         {loading ? (
@@ -173,7 +171,7 @@ export function EmailLookup({
             Looking you up...
           </>
         ) : (
-          "Submit"
+          "Continue"
         )}
       </Button>
     </form>

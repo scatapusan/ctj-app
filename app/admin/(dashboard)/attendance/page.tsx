@@ -94,7 +94,7 @@ export default function AttendancePage() {
 
       {/* Event selector */}
       <div className="glass rounded-xl p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-orange-400/80 uppercase tracking-wider">
+        <h2 className="text-sm font-semibold text-accent/80 uppercase tracking-wider">
           Select Event
         </h2>
 
@@ -105,8 +105,8 @@ export default function AttendancePage() {
               onClick={() => selectEvent(event.id)}
               className={`text-left p-3 rounded-xl border transition-all duration-200 ${
                 selectedEventId === event.id
-                  ? "border-orange-500/40 bg-orange-500/10 ring-1 ring-orange-500/20"
-                  : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]"
+                  ? "border-foreground bg-secondary ring-1 ring-foreground"
+                  : "border-border/30 bg-muted/50 hover:border-foreground hover:bg-card"
               }`}
             >
               <p className="font-medium text-sm text-foreground truncate">{event.name}</p>
@@ -124,7 +124,7 @@ export default function AttendancePage() {
             <p className="text-sm text-muted-foreground">No events yet.</p>
             <Link
               href="/admin/events"
-              className="inline-flex items-center gap-1.5 text-sm text-orange-400 hover:text-orange-300 underline underline-offset-2"
+              className="inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent underline underline-offset-2"
             >
               Create your first event
             </Link>
@@ -140,7 +140,7 @@ export default function AttendancePage() {
               <h2 className="text-lg font-semibold text-foreground">
                 {selectedEvent?.name}
               </h2>
-              <span className="flex items-center gap-1 text-sm text-orange-400 bg-orange-500/10 px-2.5 py-1 rounded-full ring-1 ring-orange-500/20">
+              <span className="flex items-center gap-1 text-sm text-accent bg-secondary px-2.5 py-1 rounded-full ring-1 ring-foreground">
                 <Users className="size-3.5" />
                 {records.length}
               </span>
@@ -193,7 +193,7 @@ export default function AttendancePage() {
                       <p className="font-medium text-foreground truncate">{r.member_name}</p>
                       <p className="text-xs text-muted-foreground truncate">{r.email}</p>
                     </div>
-                    <span className="text-xs text-orange-400/80 font-medium shrink-0">
+                    <span className="text-xs text-accent/80 font-medium shrink-0">
                       {format(new Date(r.checked_in_at), "h:mm a")}
                     </span>
                   </div>

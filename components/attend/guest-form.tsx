@@ -78,7 +78,7 @@ export function GuestForm({ eventId, onSuccess }: GuestFormProps) {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="guest-first" className="text-muted-foreground">
-            First Name <span className="text-orange-400">*</span>
+            First Name <span className="text-accent">*</span>
           </Label>
           <Input
             id="guest-first"
@@ -92,7 +92,7 @@ export function GuestForm({ eventId, onSuccess }: GuestFormProps) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="guest-last" className="text-muted-foreground">
-            Last Name <span className="text-orange-400">*</span>
+            Last Name <span className="text-accent">*</span>
           </Label>
           <Input
             id="guest-last"
@@ -138,7 +138,7 @@ export function GuestForm({ eventId, onSuccess }: GuestFormProps) {
               href="/privacy"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-orange-400 underline underline-offset-2 hover:text-orange-300"
+              className="text-accent underline underline-offset-2 hover:text-accent"
             >
               Privacy Policy
             </a>
@@ -147,7 +147,7 @@ export function GuestForm({ eventId, onSuccess }: GuestFormProps) {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}

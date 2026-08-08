@@ -2,28 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* "Barkada" theme (design direction 1c): warm white paper, navy ink, sunshine
+   yellow actions, coral accent. Everything outlined — nothing disappears in
+   daylight. All button/text pairs measured >= 4.5:1, input borders >= 3:1. */
 @layer base {
   :root {
-    --background: 220 25% 5%;
-    --foreground: 210 40% 96%;
-    --card: 220 25% 8%;
-    --card-foreground: 210 40% 96%;
-    --popover: 220 25% 8%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 28 90% 54%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 15% 15%;
-    --secondary-foreground: 210 40% 90%;
-    --muted: 220 15% 15%;
-    --muted-foreground: 215 15% 55%;
-    --accent: 213 70% 40%;
+    --background: 46.7 100% 98.2%; /* #FFFDF6 paper */
+    --foreground: 224.3 42.6% 21.2%; /* #1F2B4D navy ink */
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 224.3 42.6% 21.2%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224.3 42.6% 21.2%;
+    --primary: 42.1 100% 62%; /* #FFC53D sunshine yellow */
+    --primary-foreground: 224.3 42.6% 21.2%; /* navy on yellow = 9.1:1 */
+    --secondary: 44.3 100% 91%; /* #FFF3D1 yellow tint */
+    --secondary-foreground: 224.3 42.6% 21.2%;
+    --muted: 43.2 55.6% 91.2%; /* #F5EEDC cream */
+    --muted-foreground: 227.3 23.2% 43.9%; /* #56618A slate = 5.9:1 on paper */
+    --accent: 15.4 73% 45.1%; /* #C74A1F coral = 4.7:1 on paper */
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 20% 16%;
-    --input: 215 20% 16%;
-    --ring: 28 90% 54%;
-    --radius: 0.75rem;
+    --destructive: 3.2 71.3% 41%; /* #B3261E */
+    --destructive-foreground: 0 0% 100%;
+    --border: 227.3 23.2% 43.9%; /* #56618A — visible outlines by default */
+    --input: 224.3 42.6% 21.2%; /* navy input borders = 13:1 */
+    --ring: 224.3 42.6% 21.2%;
+    --radius: 1rem;
   }
 
   * {
@@ -40,54 +43,41 @@
     text-wrap: balance;
   }
 
+  /* Card surface. Kept under its legacy name (.glass) so every existing usage
+     picks up the outlined Barkada card automatically. No blur, no glow. */
   .glass {
-    @apply bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] shadow-lg;
+    @apply bg-card border-2 border-foreground shadow-sm;
   }
 
   .glass-hover {
-    @apply hover:bg-white/[0.07] hover:border-white/[0.12] transition-all duration-300;
+    @apply hover:bg-secondary/60 transition-colors duration-200;
   }
 
+  /* Legacy name: headings that used the orange gradient are now solid ink. */
   .gradient-text {
-    @apply bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent;
+    @apply text-foreground;
+    background: none;
   }
 
-  .glow-orange {
-    box-shadow: 0 0 20px rgba(245, 145, 30, 0.15), 0 0 60px rgba(245, 145, 30, 0.05);
-  }
-
+  /* Legacy glow names → flat outline emphasis (no glow in this theme). */
+  .glow-orange,
   .glow-orange-strong {
-    box-shadow: 0 0 20px rgba(245, 145, 30, 0.3), 0 0 60px rgba(245, 145, 30, 0.1);
+    box-shadow: 3px 3px 0 0 #1f2b4d;
   }
-}
 
-/* Animated background orbs */
-@keyframes float {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-20px) scale(1.05); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+  /* Hard offset "sticker" shadow from the 1c mocks. */
+  .shadow-pop {
+    box-shadow: 3px 3px 0 0 #1f2b4d;
+  }
+  .shadow-pop-sm {
+    box-shadow: 2px 2px 0 0 #1f2b4d;
+  }
 }
 
 @keyframes check-scale {
   0% { transform: scale(0) rotate(-10deg); opacity: 0; }
   60% { transform: scale(1.15) rotate(2deg); }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-float-slow {
-  animation: float 8s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
 }
 
 .animate-check-scale {
@@ -108,9 +98,6 @@
 
 /* Respect users who prefer reduced motion — disable decorative animations and tone down transitions */
 @media (prefers-reduced-motion: reduce) {
-  .animate-float,
-  .animate-float-slow,
-  .animate-pulse-glow,
   .animate-check-scale,
   .animate-shake,
   .animate-pulse,

@@ -108,7 +108,7 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
       role="dialog"
       aria-modal="true"
       aria-labelledby="invite-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm"
       onClick={handleClose}
     >
       <div
@@ -118,7 +118,7 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <h2 id="invite-title" className="text-lg font-bold gradient-text flex items-center gap-2">
-              <UserPlus className="size-5 text-orange-400" />
+              <UserPlus className="size-5 text-accent" />
               Invite Member
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -136,8 +136,8 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
 
         {created ? (
           <div className="space-y-4">
-            <div className="rounded-lg border border-orange-500/30 bg-orange-500/[0.06] p-4 space-y-3">
-              <p className="text-sm font-medium text-orange-300 flex items-center gap-2">
+            <div className="rounded-lg border-2 border-foreground bg-secondary/50 p-4 space-y-3">
+              <p className="text-sm font-medium text-accent flex items-center gap-2">
                 <Check className="size-4" />
                 Account created — share these credentials
               </p>
@@ -155,7 +155,7 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
                 <div>
                   <dt className="text-xs text-muted-foreground font-sans">Role</dt>
                   <dd className="text-foreground font-sans">
-                    {created.role === "admin" ? "Superadmin" : "Core Leader"}
+                    {created.role === "admin" ? "Admin" : "Core Leader"}
                   </dd>
                 </div>
               </dl>
@@ -215,10 +215,10 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
 
             <div className="space-y-1.5">
               <Label htmlFor="invite-email" className="text-muted-foreground text-xs">
-                Email <span className="text-orange-400 font-bold">*</span>
+                Email <span className="text-accent font-bold">*</span>
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-orange-400/60" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
                   id="invite-email"
                   type="email"
@@ -239,8 +239,8 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
                 <label
                   className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all min-h-[44px] ${
                     role === "core"
-                      ? "border-blue-500/40 bg-blue-500/10 text-blue-300"
-                      : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:border-white/[0.12]"
+                      ? "border-foreground bg-muted text-foreground"
+                      : "border-border/30 bg-muted/50 text-muted-foreground hover:border-foreground"
                   }`}
                 >
                   <input
@@ -258,8 +258,8 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
                 <label
                   className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all min-h-[44px] ${
                     role === "admin"
-                      ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
-                      : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:border-white/[0.12]"
+                      ? "border-foreground bg-secondary text-foreground"
+                      : "border-border/30 bg-muted/50 text-muted-foreground hover:border-foreground"
                   }`}
                 >
                   <input
@@ -272,10 +272,10 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
                     disabled={submitting}
                   />
                   <ShieldCheck className="size-4" />
-                  <span className="text-sm font-medium">Superadmin</span>
+                  <span className="text-sm font-medium">Admin</span>
                 </label>
               </div>
-              <p className="text-[11px] text-muted-foreground/70">
+              <p className="text-[11px] text-muted-foreground">
                 {role === "admin"
                   ? "Full access — can invite, edit, delete, and manage all data."
                   : "Can view and manage members & attendance. Cannot invite or delete."}
@@ -284,10 +284,10 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
 
             <div className="space-y-1.5">
               <Label htmlFor="invite-pin" className="text-muted-foreground text-xs">
-                Initial PIN <span className="text-orange-400 font-bold">*</span>
+                Initial PIN <span className="text-accent font-bold">*</span>
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-orange-400/60" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
                   id="invite-pin"
                   type="text"
@@ -306,13 +306,13 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
                   type="button"
                   onClick={() => setPin(generatePin())}
                   aria-label="Generate new PIN"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-orange-400 rounded"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground rounded"
                   disabled={submitting}
                 >
                   <RefreshCw className="size-4" />
                 </button>
               </div>
-              <p className="text-[11px] text-muted-foreground/70">
+              <p className="text-[11px] text-muted-foreground">
                 4–8 digits. Auto-generated 6 digits — they can change it later.
               </p>
             </div>

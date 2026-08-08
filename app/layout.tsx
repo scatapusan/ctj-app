@@ -4,15 +4,12 @@ import { Toaster } from "sonner";
 import { CookieBanner } from "@/components/cookie-banner";
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+// Self-hosted (34 KB variable woff2) — no Google Fonts request at build or
+// runtime, which matters on weak connections and for offline-ish reliability.
+const gabarito = localFont({
+  src: "./fonts/Gabarito-Variable.woff2",
+  variable: "--font-sans",
+  weight: "400 900",
 });
 
 export const metadata: Metadata = {
@@ -27,19 +24,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${gabarito.variable} font-sans antialiased`}>
         {children}
         <CookieBanner />
         <Toaster
           position="top-center"
           richColors
           closeButton
-          theme="dark"
+          theme="light"
           toastOptions={{
             classNames: {
-              toast: "glass !border-white/[0.08]",
+              toast: "glass",
             },
           }}
         />
