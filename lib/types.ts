@@ -1,3 +1,9 @@
+/**
+ * Which flow an event uses. 'checkin' = the ordinary one-step /attend flow.
+ * 'retreat' = pre-registration via /retreat, attendance marked by staff.
+ */
+export type RegistrationMode = "checkin" | "retreat"
+
 export interface Event {
   id: string
   name: string
@@ -5,6 +11,8 @@ export interface Event {
   event_date: string
   is_active: boolean
   created_at: string
+  /** Optional so code still compiles against pre-migration reads. */
+  registration_mode?: RegistrationMode
 }
 
 export interface Member {

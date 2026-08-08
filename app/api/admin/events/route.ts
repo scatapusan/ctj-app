@@ -43,11 +43,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Event name and date are required." }, { status: 400 })
   }
   const description = typeof body.description === "string" && body.description.trim() ? body.description.trim() : null
+  // 'retreat' events use the /retreat pre-registration flow and are hidden
+  // from the ordinary check-in picker.
+  const registrationMode = body.registration_mode === "retreat" ? "retreat" : "checkin"
 
   const supabase = createRouteHandlerClient()
   const { data, error } = await supabase
     .from("events")
-    .insert({ name, description, event_date: eventDate, is_active: body.is_active !== false })
+    .insert({
+      name,
+      description,
+      event_date: eventDate,
+      is_active: body.is_active !== false,
+      registration_mode: registrationMode,
+    })
     .select()
     .single()
 

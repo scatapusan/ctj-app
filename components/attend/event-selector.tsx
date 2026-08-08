@@ -47,11 +47,27 @@ export function EventSelector({ onSelect, onGuest }: EventSelectorProps) {
       const supabase = createBrowserClient()
       // Only non-sensitive, anon-readable columns (description is excluded by
       // the RLS lockdown's column grant).
-      const { data, error } = await supabase
+      //
+      // Retreat-mode events are deliberately NOT offered here: they use the
+      // /retreat pre-registration flow, and checking into one from this picker
+      // would mark someone attended without any of the retreat details.
+      const modeAware = await supabase
         .from("events")
         .select("id, name, event_date, is_active")
         .eq("is_active", true)
+        .eq("registration_mode", "checkin")
         .order("event_date", { ascending: false })
+
+      // Falls back when registration_mode has not been migrated yet, so a
+      // deploy that lands before the migration degrades to the old list
+      // instead of breaking check-in entirely.
+      const { data, error } = modeAware.error
+        ? await supabase
+            .from("events")
+            .select("id, name, event_date, is_active")
+            .eq("is_active", true)
+            .order("event_date", { ascending: false })
+        : modeAware
 
       if (error) {
         setError("Failed to load events. Please try again.")

@@ -1,8 +1,9 @@
 "use client"
 
-import { Suspense, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { createBrowserClient } from "@/lib/supabase"
 import type { Member, MemberSummary } from "@/lib/types"
 import { EventSelector } from "@/components/attend/event-selector"
 import { EmailLookup } from "@/components/attend/email-lookup"
@@ -32,8 +33,36 @@ type FlowStep =
   | "profile-saved"
 
 function AttendPageContent() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const eventParam = searchParams.get("event")
+
+  // A retreat event deep-linked here (wrong QR, old link, shared URL) must not
+  // run the one-step check-in — send it to the pre-registration flow instead.
+  const [checkingMode, setCheckingMode] = useState<boolean>(!!eventParam)
+
+  useEffect(() => {
+    if (!eventParam) return
+    let cancelled = false
+    async function routeByMode() {
+      const supabase = createBrowserClient()
+      const { data, error } = await supabase
+        .from("events")
+        .select("id, registration_mode")
+        .eq("id", eventParam)
+        .maybeSingle()
+      if (cancelled) return
+      // On error (e.g. registration_mode not migrated yet) fall through to the
+      // normal flow rather than blocking check-in.
+      if (!error && data?.registration_mode === "retreat") {
+        router.replace(`/retreat?event=${eventParam}`)
+        return
+      }
+      setCheckingMode(false)
+    }
+    routeByMode()
+    return () => { cancelled = true }
+  }, [eventParam, router])
 
   const [step, setStep] = useState<FlowStep>(
     eventParam ? "email-input" : "select-event"
@@ -212,6 +241,24 @@ function AttendPageContent() {
     }
   }
   const stage = currentStage()
+
+  // Hold the flow until we know whether this event belongs to /retreat, so a
+  // retreat link never briefly exposes the one-step check-in.
+  if (checkingMode) {
+    return (
+      <div
+        className="min-h-screen bg-background flex items-center justify-center"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading attendance"
+      >
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          <span className="text-sm font-medium">Loading…</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background relative">
