@@ -5,19 +5,21 @@ import { Button } from "@/components/ui/button"
 import { Download, X, Printer } from "lucide-react"
 import QRCode from "qrcode"
 
+type QrMode = "checkin" | "preregister"
+
 interface QrModalProps {
   eventName: string
   eventId: string
   baseUrl: string
+  /** Retreat-style events open on their pre-registration QR. */
+  defaultMode?: QrMode
   onClose: () => void
 }
 
-type QrMode = "checkin" | "preregister"
-
-export function QrModal({ eventName, eventId, baseUrl, onClose }: QrModalProps) {
+export function QrModal({ eventName, eventId, baseUrl, defaultMode = "checkin", onClose }: QrModalProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [error, setError] = useState<string | null>(null)
-  const [mode, setMode] = useState<QrMode>("checkin")
+  const [mode, setMode] = useState<QrMode>(defaultMode)
 
   const attendUrl =
     mode === "checkin"

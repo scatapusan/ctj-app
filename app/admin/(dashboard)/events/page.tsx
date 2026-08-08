@@ -35,6 +35,7 @@ export default function EventsPage() {
   const [formDescription, setFormDescription] = useState("")
   const [formDate, setFormDate] = useState("")
   const [formActive, setFormActive] = useState(true)
+  const [formRetreat, setFormRetreat] = useState(false)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -70,6 +71,7 @@ export default function EventsPage() {
     setFormDescription("")
     setFormDate(new Date().toISOString().split("T")[0])
     setFormActive(true)
+    setFormRetreat(false)
     setFormError(null)
     setShowForm(true)
   }
@@ -80,6 +82,7 @@ export default function EventsPage() {
     setFormDescription(event.description || "")
     setFormDate(event.event_date.split("T")[0])
     setFormActive(event.is_active)
+    setFormRetreat(event.registration_mode === "retreat")
     setFormError(null)
     setShowForm(true)
   }
@@ -102,6 +105,7 @@ export default function EventsPage() {
       description: formDescription.trim() || null,
       event_date: formDate,
       is_active: formActive,
+      registration_mode: formRetreat ? "retreat" : "checkin",
     }
 
     try {
@@ -234,6 +238,20 @@ export default function EventsPage() {
             </Label>
           </div>
 
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <Switch id="event-retreat" checked={formRetreat} onCheckedChange={setFormRetreat} />
+              <Label htmlFor="event-retreat" className="text-sm text-foreground/80 cursor-pointer">
+                Retreat-style (pre-register first)
+              </Label>
+            </div>
+            <p className="text-xs font-medium text-muted-foreground">
+              {formRetreat
+                ? "People sign up ahead at /retreat (category, guardian, baby photo). They are NOT marked present until a leader marks them on Check-in day. Hidden from the normal check-in picker."
+                : "Normal event: people check themselves in at /attend and are marked present immediately."}
+            </p>
+          </div>
+
           {formError && (
             <p className="text-sm text-destructive">{formError}</p>
           )}
@@ -273,6 +291,11 @@ export default function EventsPage() {
                   >
                     {event.is_active ? "Active" : "Inactive"}
                   </span>
+                  {event.registration_mode === "retreat" && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-muted text-muted-foreground ring-1 ring-border">
+                      Pre-register
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
@@ -352,6 +375,7 @@ export default function EventsPage() {
           eventName={qrEvent.name}
           eventId={qrEvent.id}
           baseUrl={baseUrl}
+          defaultMode={qrEvent.registration_mode === "retreat" ? "preregister" : "checkin"}
           onClose={() => setQrEvent(null)}
         />
       )}

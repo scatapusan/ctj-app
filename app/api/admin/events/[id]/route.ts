@@ -17,6 +17,9 @@ export async function PATCH(request: Request, { params }: Params) {
   }
   if (typeof body.event_date === "string") patch.event_date = body.event_date
   if (typeof body.is_active === "boolean") patch.is_active = body.is_active
+  if (body.registration_mode === "checkin" || body.registration_mode === "retreat") {
+    patch.registration_mode = body.registration_mode
+  }
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "Nothing to update." }, { status: 400 })
