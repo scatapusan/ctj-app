@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const supabase = createRouteHandlerClient()
   const { data: attendance, error } = await supabase
     .from("attendance")
-    .select("id, checked_in_at, member_id, status, attended_at")
+    .select("id, checked_in_at, member_id, status, attended_at, category, is_core")
     .eq("event_id", eventId)
     .order("checked_in_at", { ascending: true })
 
@@ -29,6 +29,8 @@ export async function GET(request: Request) {
     checked_in_at: string
     status: string
     attended_at: string | null
+    category: string | null
+    is_core: boolean
   }[] = []
   const rows = attendance ?? []
   if (rows.length > 0) {
@@ -45,9 +47,11 @@ export async function GET(request: Request) {
       member_name: memberMap.get(a.member_id)?.name ?? "Unknown",
       email: memberMap.get(a.member_id)?.email ?? "",
       checked_in_at: a.checked_in_at,
-      // Default for rows written before the retreat migration is applied.
+      // Defaults cover rows read before the matching migration is applied.
       status: (a as { status?: string }).status ?? "attended",
       attended_at: (a as { attended_at?: string | null }).attended_at ?? null,
+      category: (a as { category?: string | null }).category ?? null,
+      is_core: (a as { is_core?: boolean }).is_core === true,
     }))
   }
 

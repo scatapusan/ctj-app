@@ -229,6 +229,61 @@ describe("POST /api/attend/retreat-register — existing member", () => {
   })
 })
 
+describe("POST /api/attend/retreat-register — core snapshot", () => {
+  const body = () => ({
+    eventId: "e1",
+    memberId: "m1",
+    retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: "https://x.test/b.jpg" },
+  })
+
+  it("snapshots is_core=true from the member record", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { members: { data: { id: "m1", first_name: "Core", last_name: "Leader", email: "c@x.test", is_youth_ya_core: true } } },
+      onInsert: (_t, p) => { payload = p },
+    })
+    const res = await retreatPOST(req(body()))
+    expect(res.status).toBe(200)
+    expect(payload!.is_core).toBe(true)
+    // Age bracket is preserved alongside it — core never overwrites category.
+    expect(payload!.category).toBe("ya")
+  })
+
+  it("snapshots is_core=false for an ordinary member", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { members: { data: { id: "m1", first_name: "Plain", last_name: "Member", email: "p@x.test", is_youth_ya_core: false } } },
+      onInsert: (_t, p) => { payload = p },
+    })
+    await retreatPOST(req(body()))
+    expect(payload!.is_core).toBe(false)
+  })
+
+  it("IGNORES a client that tries to declare itself core", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { members: { data: { id: "m1", first_name: "Plain", last_name: "Member", email: "p@x.test", is_youth_ya_core: false } } },
+      onInsert: (_t, p) => { payload = p },
+    })
+    const hostile = { ...body(), is_core: true, retreat: { ...body().retreat, is_core: true, category: "core" } }
+    const res = await retreatPOST(req(hostile))
+    // 'core' is not a valid category, so the request is rejected outright…
+    expect(res.status).toBe(400)
+    // …and nothing was written.
+    expect(payload).toBeUndefined()
+  })
+
+  it("a hostile client cannot set is_core even with a valid category", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { members: { data: { id: "m1", first_name: "Plain", last_name: "Member", email: "p@x.test", is_youth_ya_core: false } } },
+      onInsert: (_t, p) => { payload = p },
+    })
+    await retreatPOST(req({ ...body(), is_core: true, retreat: { ...body().retreat, is_core: true } }))
+    expect(payload!.is_core).toBe(false)
+  })
+})
+
 describe("POST /api/attend/retreat-register — walk-in mode (day-of)", () => {
   it("new person walk-in registers with status='attended' and pushes member + attendance to Sheets", async () => {
     let rpcArgs: Record<string, unknown> | undefined

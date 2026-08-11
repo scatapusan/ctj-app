@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import type { Event } from "@/lib/types"
+import { categoryLabel, type Event } from "@/lib/types"
 import { toast } from "@/lib/toast"
 import { ListSkeleton } from "@/components/admin/list-skeleton"
 import { Input } from "@/components/ui/input"
@@ -20,6 +20,8 @@ interface RosterRow {
   checkedInAt: string
   attendedAt: string | null
   category: "youth" | "ya" | null
+  /** Snapshotted core-leader role, shown instead of the age bracket. */
+  isCore: boolean
   /** Short-lived signed URL — the bucket is private. */
   babyPhotoUrl: string | null
   hasGuardian: boolean
@@ -219,9 +221,9 @@ export default function CheckinPage() {
                           )}
                         </p>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
-                          {row.category && (
+                          {categoryLabel(row.category, row.isCore) && (
                             <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-secondary text-foreground ring-1 ring-border">
-                              {row.category === "youth" ? "Youth" : "YA"}
+                              {categoryLabel(row.category, row.isCore)}
                             </span>
                           )}
                           {row.hasGuardian && (

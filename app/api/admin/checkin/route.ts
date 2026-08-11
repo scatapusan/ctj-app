@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 
   const { data: rows, error } = await supabase
     .from("attendance")
-    .select("id, member_id, status, checked_in_at, attended_at, category, baby_photo_url, guardian_name, guardian_contact")
+    .select("id, member_id, status, checked_in_at, attended_at, category, is_core, baby_photo_url, guardian_name, guardian_contact")
     .eq("event_id", eventId)
     .order("checked_in_at", { ascending: true })
 
@@ -58,6 +58,7 @@ export async function GET(request: Request) {
         checkedInAt: r.checked_in_at,
         attendedAt: r.attended_at,
         category: r.category,
+        isCore: r.is_core === true,
         babyPhotoUrl: r.baby_photo_url ? (signed.get(r.baby_photo_url) ?? null) : null,
         hasGuardian: !!r.guardian_name,
       }

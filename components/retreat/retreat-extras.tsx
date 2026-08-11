@@ -129,11 +129,22 @@ export function RetreatExtras({ member, eventId, walkIn, onSuccess }: RetreatExt
           </AvatarFallback>
         </Avatar>
         <div>
-          <h2 className="text-xl font-extrabold leading-tight text-foreground">
-            Hi, {member.first_name}!
-          </h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-extrabold leading-tight text-foreground">
+              Hi, {member.first_name}!
+            </h2>
+            {member.is_core && (
+              // Read-only: core status comes from the member record, never
+              // from anything the registrant can choose here.
+              <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-secondary text-foreground ring-1 ring-foreground">
+                Core
+              </span>
+            )}
+          </div>
           <p className="text-sm font-medium text-muted-foreground">
-            Just a few retreat questions and you&apos;re in.
+            {member.is_core
+              ? "You're registered as Core. Just a few retreat questions and you're in."
+              : "Just a few retreat questions and you're in."}
           </p>
         </div>
       </div>
