@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/admin-auth"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { MEMBER_COLUMNS } from "@/lib/supabase"
+import { signPhoto, PHOTO_BUCKET, isLegacyAbsoluteUrl } from "@/lib/photos"
 
 type Params = { params: { id: string } }
 
@@ -43,7 +44,13 @@ export async function GET(_request: Request, { params }: Params) {
     }))
   }
 
-  return NextResponse.json({ member, attendanceHistory })
+  const withPhoto = {
+    ...member,
+    photo_path: member.photo_url,
+    photo_url: await signPhoto(supabase, member.photo_url as string | null),
+  }
+
+  return NextResponse.json({ member: withPhoto, attendanceHistory })
 }
 
 // Mutations. Per-action role rules:
@@ -105,12 +112,16 @@ export async function DELETE(_request: Request, { params }: Params) {
     .eq("id", params.id)
     .maybeSingle()
 
+  // photo_url now stores the object path directly; legacy rows may still hold
+  // an absolute URL, so fall back to its last segment.
   if (member?.photo_url) {
-    const parts = member.photo_url.split("/")
-    const fileName = parts[parts.length - 1]
-    if (fileName && !fileName.startsWith("http")) {
+    const stored = member.photo_url as string
+    const objectPath = isLegacyAbsoluteUrl(stored)
+      ? stored.split("/").pop()?.split("?")[0]
+      : stored
+    if (objectPath) {
       try {
-        await supabase.storage.from("member-photos").remove([fileName])
+        await supabase.storage.from(PHOTO_BUCKET).remove([objectPath])
       } catch (err) {
         console.error("member photo delete failed:", err)
       }

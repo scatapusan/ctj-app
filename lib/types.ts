@@ -25,7 +25,14 @@ export interface Member {
   contact_number: string | null
   facebook_link: string | null
   address: string | null
+  /**
+   * From READ endpoints this is display-ready: a short-lived signed URL (or a
+   * legacy absolute URL for rows written before the private-bucket migration).
+   * Never send it back on save — use `photo_path`.
+   */
   photo_url: string | null
+  /** The raw stored object path, supplied by read endpoints for round-tripping. */
+  photo_path?: string | null
   discipler_name: string | null
   disciples: string | null
   prospect_disciples: string | null

@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
 import { syncMemberToSheet } from "@/lib/google-sheets"
 import { pushRegistrationToSheets, pushAttendanceToSheets } from "@/lib/attend-sheets"
+import { toStoredPhotoValue } from "@/lib/photos"
 import type { Member } from "@/lib/types"
 
 // Retreat registration. Default is PRE-registration (status='registered' —
@@ -57,7 +58,10 @@ function validateRetreat(input: Record<string, unknown>, birthdate: string): Ret
   const category = typeof input.category === "string" ? input.category : ""
   if (category !== "youth" && category !== "ya") return "Please choose your category."
 
-  const babyPhotoUrl = typeof input.baby_photo_url === "string" && input.baby_photo_url ? input.baby_photo_url : null
+  const babyPhotoUrl =
+    typeof input.baby_photo_url === "string" && input.baby_photo_url
+      ? toStoredPhotoValue(input.baby_photo_url)
+      : null
   if (category === "ya" && !babyPhotoUrl) {
     return "YA/Singles registration needs a baby or childhood photo."
   }

@@ -104,7 +104,9 @@ describe("POST /api/attend/profile (fetch behind PIN)", () => {
     use({ rpc: { data: true, error: null }, maybeSingle: { members: { data: full } } })
     const res = await profileGET(req({ memberId: "m1", pin: "1234" }))
     expect(res.status).toBe(200)
-    expect((await res.json()).member).toEqual(full)
+    // Every stored field is returned, plus the photo pair the private-bucket
+    // change adds: photo_url is display-ready, photo_path is what saves send back.
+    expect((await res.json()).member).toEqual({ ...full, photo_url: null, photo_path: null })
   })
 
   it("returns 401 for a wrong PIN", async () => {

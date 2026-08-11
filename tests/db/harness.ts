@@ -48,7 +48,14 @@ export async function startTestDb(): Promise<TestDb> {
     try {
       await pg.initialise()
       await pg.start()
-      await pg.createDatabase("ctjtest")
+      // Force UTF8 (from template0). The Windows default cluster encoding is
+      // WIN1252, which rejects characters like U+2192 that appear naturally in
+      // migration comments — a failure mode that has nothing to do with the
+      // SQL being tested.
+      const bootstrap = new Client({ host: "127.0.0.1", port, user: "postgres", password: "postgres", database: "postgres" })
+      await bootstrap.connect()
+      await bootstrap.query(`create database ctjtest with encoding 'UTF8' template template0`)
+      await bootstrap.end()
       const client = new Client({ host: "127.0.0.1", port, user: "postgres", password: "postgres", database: "ctjtest" })
       await client.connect()
       return { pg, client, port }
