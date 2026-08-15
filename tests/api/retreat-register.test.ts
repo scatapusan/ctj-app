@@ -316,7 +316,7 @@ describe("POST /api/attend/retreat-register — self-selected core", () => {
     expect(payload!.is_core).toBe(false)
   })
 
-  it("core registrants skip the YA baby-photo requirement", async () => {
+  it("core registrants are not BLOCKED by the YA baby-photo requirement", async () => {
     let payload: Record<string, unknown> | undefined
     use({
       select: { members: { data: plainMember } },
@@ -328,6 +328,47 @@ describe("POST /api/attend/retreat-register — self-selected core", () => {
     expect(res.status).toBe(200)
     expect(payload!.is_core).toBe(true)
     expect(payload!.baby_photo_url).toBeNull()
+  })
+
+  it("stores a baby photo a core registrant DID upload (they play the game too)", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { members: { data: plainMember } },
+      onInsert: (_t, p) => { payload = p },
+    })
+    const res = await retreatPOST(
+      req({
+        ...body(),
+        retreat: {
+          birthdate: birthdateForAge(24), category: "ya", is_core: true,
+          baby_photo_url: "https://x.test/core-baby.jpg",
+        },
+      }),
+    )
+    expect(res.status).toBe(200)
+    expect(payload!.is_core).toBe(true)
+    expect(payload!.baby_photo_url).toBeTruthy()
+  })
+
+  it("stores a baby photo for a YOUTH-aged core registrant too", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { members: { data: plainMember } },
+      onInsert: (_t, p) => { payload = p },
+    })
+    const res = await retreatPOST(
+      req({
+        ...body(),
+        retreat: {
+          birthdate: birthdateForAge(20), category: "youth", is_core: true,
+          baby_photo_url: "https://x.test/young-core.jpg",
+        },
+      }),
+    )
+    expect(res.status).toBe(200)
+    expect(payload!.category).toBe("youth")
+    expect(payload!.is_core).toBe(true)
+    expect(payload!.baby_photo_url).toBeTruthy()
   })
 
   it("new person: passes the choice to the RPC, backstops the attendance flag, and never sends privilege flags", async () => {

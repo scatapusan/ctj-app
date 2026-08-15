@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { RetreatDetailsFields, computeAge, suggestCategory } from "./retreat-details-fields"
+import { RetreatDetailsFields, computeAge, suggestCategory, showsBabyPhoto } from "./retreat-details-fields"
 import { uploadBabyPhoto } from "./upload-baby-photo"
 import { Loader2, UserPlus } from "lucide-react"
 
@@ -81,7 +81,7 @@ export function RetreatForm({ email, eventId, walkIn, onSuccess }: RetreatFormPr
 
     try {
       let babyPhotoUrl: string | null = null
-      if (selection === "ya" && babyPhotoFile) {
+      if (showsBabyPhoto(selection) && babyPhotoFile) {
         try {
           babyPhotoUrl = await uploadBabyPhoto(babyPhotoFile)
         } catch {

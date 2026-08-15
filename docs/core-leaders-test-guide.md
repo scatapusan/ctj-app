@@ -37,11 +37,11 @@ if that isn't how you normally address the group.
 >    (birthday, category). If it makes you fill in a whole new form, your email
 >    doesn't match your member record — tell me which one you used.
 > 2. Pick **Core** as your category (it may already be pre-selected for you).
->    If you want to test the photo upload too, pick **YA / Singles** instead —
->    that one requires a baby/childhood photo. Try the upload on mobile data,
+>    Please also upload a baby/childhood photo — it's optional for Core, but
+>    you're in the game too, and it tests the upload. Try it on mobile data,
 >    not just WiFi. Photos must be under 5MB; if it fails you should see "Your
 >    photo couldn't be uploaded." (You can't change your own registration
->    afterwards — tell me which one you picked and I'll correct it if needed.)
+>    afterwards — tell me what you picked and I'll correct it if needed.)
 > 3. Does everything look right on YOUR phone? Screenshot anything weird.
 > 4. After submitting you should see **"You're pre-registered!"** — if you see
 >    an error instead, screenshot it and send it here.
@@ -70,6 +70,7 @@ bracket; picking Youth or YA clears the Core label.
 | Known email → short form | Existing-member path, no duplicate errors |
 | Leader picks Core | Self-selection stores Core on the registration |
 | Flagged leader sees Core pre-selected | `is_youth_ya_core` prefill works |
+| Core leader uploads a baby photo | Optional-for-Core upload works and is kept |
 | Leader picks YA / Singles | Required upload works on real phones/networks |
 | Registering twice | Friendly already-registered screen |
 | Various phones | New UI on real devices, weak-signal upload behavior |
