@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import type { RetreatCategory } from "@/lib/types"
+import type { RetreatCategory, RetreatSelection } from "@/lib/types"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Camera, X } from "lucide-react"
@@ -28,8 +28,8 @@ interface RetreatDetailsFieldsProps {
   idPrefix: string
   birthdate: string
   onBirthdateChange: (value: string) => void
-  category: RetreatCategory | null
-  onCategoryChange: (value: RetreatCategory) => void
+  selection: RetreatSelection | null
+  onSelectionChange: (value: RetreatSelection) => void
   guardianName: string
   onGuardianNameChange: (value: string) => void
   guardianContact: string
@@ -42,16 +42,17 @@ interface RetreatDetailsFieldsProps {
 
 /**
  * The retreat-specific answers, shared by the new-person form and the
- * existing-member step: birthday (required — category depends on it), computed
- * age, the category radio the ministry lead asked for, guardian fields for
- * minors, and the required YA baby-photo picker.
+ * existing-member step: birthday (required — the age bracket depends on it),
+ * computed age, the Youth / YA / Core picker (Core is a self-selected
+ * registration label — recognised core leaders get it pre-selected, anyone can
+ * change it), guardian fields for minors, and the YA baby-photo picker.
  */
 export function RetreatDetailsFields({
   idPrefix,
   birthdate,
   onBirthdateChange,
-  category,
-  onCategoryChange,
+  selection,
+  onSelectionChange,
   guardianName,
   onGuardianNameChange,
   guardianContact,
@@ -68,8 +69,9 @@ export function RetreatDetailsFields({
 
   function handleBirthdate(value: string) {
     onBirthdateChange(value)
+    // Suggest the age bracket, but never stomp an explicit Core choice.
     const suggested = suggestCategory(computeAge(value))
-    if (suggested) onCategoryChange(suggested)
+    if (suggested && selection !== "core") onSelectionChange(suggested)
   }
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -108,7 +110,8 @@ export function RetreatDetailsFields({
         )}
       </div>
 
-      {/* Category radio (auto-suggested from birthday, user-confirmable) */}
+      {/* Category radio (bracket auto-suggested from birthday; Core is a
+          self-selected registration label — admins can correct it later) */}
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium leading-none text-muted-foreground mb-2">
           Category <span className="text-destructive">*</span>
@@ -118,13 +121,16 @@ export function RetreatDetailsFields({
             [
               { value: "youth", label: "Youth", sub: "12–22 years old" },
               { value: "ya", label: "YA / Singles", sub: "23 and up" },
+              { value: "core", label: "Core", sub: "Youth & YA core team" },
             ] as const
           ).map((opt) => {
-            const selected = category === opt.value
+            const selected = selection === opt.value
             return (
               <label
                 key={opt.value}
                 className={`flex flex-col items-start gap-0.5 min-h-[56px] rounded-2xl px-4 py-3 cursor-pointer transition-all ${
+                  opt.value === "core" ? "col-span-2" : ""
+                } ${
                   selected
                     ? "bg-secondary border-[2.5px] border-foreground shadow-pop-sm"
                     : "bg-card border-2 border-border hover:border-foreground"
@@ -135,7 +141,7 @@ export function RetreatDetailsFields({
                   name={`${idPrefix}-category`}
                   value={opt.value}
                   checked={selected}
-                  onChange={() => onCategoryChange(opt.value)}
+                  onChange={() => onSelectionChange(opt.value)}
                   className="sr-only"
                   disabled={disabled}
                 />
@@ -192,8 +198,8 @@ export function RetreatDetailsFields({
         </div>
       )}
 
-      {/* Baby photo — required for YA */}
-      {category === "ya" && (
+      {/* Baby photo — required for YA (Core registrants skip the game photo) */}
+      {selection === "ya" && (
         <div className="space-y-2">
           <Label className="text-muted-foreground">
             Baby / Childhood Photo <span className="text-destructive">*</span>

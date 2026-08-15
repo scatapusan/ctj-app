@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import type { RetreatCategory } from "@/lib/types"
+import type { RetreatSelection } from "@/lib/types"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { RetreatDetailsFields, computeAge } from "./retreat-details-fields"
+import { RetreatDetailsFields, computeAge, suggestCategory } from "./retreat-details-fields"
 import { uploadBabyPhoto } from "./upload-baby-photo"
 import { Loader2, UserPlus } from "lucide-react"
 
@@ -27,7 +27,7 @@ export function RetreatForm({ email, eventId, walkIn, onSuccess }: RetreatFormPr
   const [contactNumber, setContactNumber] = useState("")
 
   const [birthdate, setBirthdate] = useState("")
-  const [category, setCategory] = useState<RetreatCategory | null>(null)
+  const [selection, setSelection] = useState<RetreatSelection | null>(null)
   const [guardianName, setGuardianName] = useState("")
   const [guardianContact, setGuardianContact] = useState("")
   const [babyPhotoFile, setBabyPhotoFile] = useState<File | null>(null)
@@ -59,8 +59,8 @@ export function RetreatForm({ email, eventId, walkIn, onSuccess }: RetreatFormPr
     const age = computeAge(birthdate)
     if (age === null || age < 0 || age > 100) return "Please enter a valid birthday."
     if (age < 12) return "The retreat is for ages 12 and up — please ask a leader to help you register."
-    if (!category) return "Please choose your category."
-    if (category === "ya" && !babyPhotoFile) return "Please add your baby or childhood photo."
+    if (!selection) return "Please choose your category."
+    if (selection === "ya" && !babyPhotoFile) return "Please add your baby or childhood photo."
     if (age < 18 && (!guardianName.trim() || !guardianContact.trim())) {
       return "We need your parent/guardian's name and contact number."
     }
@@ -81,7 +81,7 @@ export function RetreatForm({ email, eventId, walkIn, onSuccess }: RetreatFormPr
 
     try {
       let babyPhotoUrl: string | null = null
-      if (category === "ya" && babyPhotoFile) {
+      if (selection === "ya" && babyPhotoFile) {
         try {
           babyPhotoUrl = await uploadBabyPhoto(babyPhotoFile)
         } catch {
@@ -109,7 +109,10 @@ export function RetreatForm({ email, eventId, walkIn, onSuccess }: RetreatFormPr
           },
           retreat: {
             birthdate,
-            category,
+            // Core is a label on top of the age bracket: the bracket is still
+            // stored (derived from the birthday) so reports keep both.
+            category: selection === "core" ? suggestCategory(computeAge(birthdate)) : selection,
+            is_core: selection === "core",
             baby_photo_url: babyPhotoUrl,
             guardian_name: guardianName.trim() || null,
             guardian_contact: guardianContact.trim() || null,
@@ -189,8 +192,8 @@ export function RetreatForm({ email, eventId, walkIn, onSuccess }: RetreatFormPr
         idPrefix="rt"
         birthdate={birthdate}
         onBirthdateChange={setBirthdate}
-        category={category}
-        onCategoryChange={setCategory}
+        selection={selection}
+        onSelectionChange={setSelection}
         guardianName={guardianName}
         onGuardianNameChange={setGuardianName}
         guardianContact={guardianContact}

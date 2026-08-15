@@ -71,6 +71,13 @@ export type AttendanceStatus = "registered" | "attended"
 
 export type RetreatCategory = "youth" | "ya"
 
+/**
+ * What the registrant picks on the retreat form. 'core' is a registration
+ * label, not an age bracket — when chosen, the stored `category` stays the
+ * age bracket (derived from the birthday) and `is_core` records the choice.
+ */
+export type RetreatSelection = RetreatCategory | "core"
+
 export interface Attendance {
   id: string
   member_id: string
@@ -82,8 +89,10 @@ export interface Attendance {
   /** Event-scoped retreat registration answers (null outside retreat flows). */
   category: RetreatCategory | null
   /**
-   * Whether this person was a core leader AT REGISTRATION TIME. Core is a role,
-   * not an age bracket, so it lives alongside `category` rather than inside it.
+   * Whether this person registered as Core for this event. A registration
+   * label chosen on the form (prefilled from the member's roster flag when
+   * recognised), NOT a privilege — it never feeds back into the member record.
+   * Kept alongside `category` so the age bracket isn't lost.
    */
   is_core: boolean
   baby_photo_url: string | null
@@ -102,7 +111,7 @@ export interface MemberSummary {
   last_name: string
   photo_url: string | null
   is_guest: boolean
-  /** Recognised core leader — drives the read-only badge on the retreat form. */
+  /** Recognised core leader — prefills the Core option on the retreat form. */
   is_core?: boolean
 }
 

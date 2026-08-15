@@ -57,3 +57,43 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ records })
 }
+
+// Correct a registrant's category label (Youth / YA / Core) on ONE attendance
+// row. Admin or core — this is registration data, not a privilege change, and
+// with Core now self-selected on the form this is the correction path.
+//   'youth' | 'ya' -> sets the age bracket and clears the Core label
+//   'core'         -> sets the Core label, KEEPING the stored age bracket
+// Never touches the members table (is_youth_ya_core stays the admin-only
+// toggleCore action on /api/admin/members/[id]).
+export async function PATCH(request: Request) {
+  const guard = requireRole("admin", "core")
+  if (!guard.ok) return guard.response
+
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
+  const id = typeof body.id === "string" ? body.id : ""
+  const category = typeof body.category === "string" ? body.category : ""
+
+  if (!id) return NextResponse.json({ error: "Missing attendance id." }, { status: 400 })
+  if (!["youth", "ya", "core"].includes(category)) {
+    return NextResponse.json({ error: "Invalid category." }, { status: 400 })
+  }
+
+  const patch =
+    category === "core" ? { is_core: true } : { category, is_core: false }
+
+  const supabase = createRouteHandlerClient()
+  const { data, error } = await supabase
+    .from("attendance")
+    .update(patch)
+    .eq("id", id)
+    .select("id, category, is_core")
+    .maybeSingle()
+
+  if (error) {
+    console.error("admin attendance category error:", error)
+    return NextResponse.json({ error: "Update failed." }, { status: 500 })
+  }
+  if (!data) return NextResponse.json({ error: "Attendance row not found." }, { status: 404 })
+
+  return NextResponse.json({ ok: true, record: data })
+}

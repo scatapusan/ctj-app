@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import type { MemberSummary, RetreatCategory } from "@/lib/types"
+import type { MemberSummary, RetreatSelection } from "@/lib/types"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { RetreatDetailsFields, computeAge } from "./retreat-details-fields"
+import { RetreatDetailsFields, computeAge, suggestCategory } from "./retreat-details-fields"
 import { uploadBabyPhoto } from "./upload-baby-photo"
 import { Loader2, CheckCircle2 } from "lucide-react"
 
@@ -22,10 +22,13 @@ interface RetreatExtrasProps {
  * though it may be on file — the lookup endpoint deliberately returns no PII
  * (that sits behind the PIN), and category depends on it. Nothing on the
  * member profile is written; the answers live on the attendance row.
+ *
+ * Core is pre-selected when the roster recognises them as core, but it's just
+ * a prefill — the roster is often stale, so they can pick anything.
  */
 export function RetreatExtras({ member, eventId, walkIn, onSuccess }: RetreatExtrasProps) {
   const [birthdate, setBirthdate] = useState("")
-  const [category, setCategory] = useState<RetreatCategory | null>(null)
+  const [selection, setSelection] = useState<RetreatSelection | null>(member.is_core ? "core" : null)
   const [guardianName, setGuardianName] = useState("")
   const [guardianContact, setGuardianContact] = useState("")
   const [babyPhotoFile, setBabyPhotoFile] = useState<File | null>(null)
@@ -57,8 +60,8 @@ export function RetreatExtras({ member, eventId, walkIn, onSuccess }: RetreatExt
     const age = computeAge(birthdate)
     if (age === null || age < 0 || age > 100) return "Please enter a valid birthday."
     if (age < 12) return "The retreat is for ages 12 and up — please ask a leader to help you register."
-    if (!category) return "Please choose your category."
-    if (category === "ya" && !babyPhotoFile) return "Please add your baby or childhood photo."
+    if (!selection) return "Please choose your category."
+    if (selection === "ya" && !babyPhotoFile) return "Please add your baby or childhood photo."
     if (age < 18 && (!guardianName.trim() || !guardianContact.trim())) {
       return "We need your parent/guardian's name and contact number."
     }
@@ -78,7 +81,7 @@ export function RetreatExtras({ member, eventId, walkIn, onSuccess }: RetreatExt
 
     try {
       let babyPhotoUrl: string | null = null
-      if (category === "ya" && babyPhotoFile) {
+      if (selection === "ya" && babyPhotoFile) {
         try {
           babyPhotoUrl = await uploadBabyPhoto(babyPhotoFile)
         } catch {
@@ -97,7 +100,10 @@ export function RetreatExtras({ member, eventId, walkIn, onSuccess }: RetreatExt
           walkIn: walkIn === true,
           retreat: {
             birthdate,
-            category,
+            // Core is a label on top of the age bracket: the bracket is still
+            // stored (derived from the birthday) so reports keep both.
+            category: selection === "core" ? suggestCategory(computeAge(birthdate)) : selection,
+            is_core: selection === "core",
             baby_photo_url: babyPhotoUrl,
             guardian_name: guardianName.trim() || null,
             guardian_contact: guardianContact.trim() || null,
@@ -134,8 +140,8 @@ export function RetreatExtras({ member, eventId, walkIn, onSuccess }: RetreatExt
               Hi, {member.first_name}!
             </h2>
             {member.is_core && (
-              // Read-only: core status comes from the member record, never
-              // from anything the registrant can choose here.
+              // Roster recognition — it only pre-selects Core below; the
+              // registrant can still pick a different category.
               <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-secondary text-foreground ring-1 ring-foreground">
                 Core
               </span>
@@ -143,7 +149,7 @@ export function RetreatExtras({ member, eventId, walkIn, onSuccess }: RetreatExt
           </div>
           <p className="text-sm font-medium text-muted-foreground">
             {member.is_core
-              ? "You're registered as Core. Just a few retreat questions and you're in."
+              ? "We've pre-selected Core for you — change it below if that's not right."
               : "Just a few retreat questions and you're in."}
           </p>
         </div>
@@ -153,8 +159,8 @@ export function RetreatExtras({ member, eventId, walkIn, onSuccess }: RetreatExt
         idPrefix="rtx"
         birthdate={birthdate}
         onBirthdateChange={setBirthdate}
-        category={category}
-        onCategoryChange={setCategory}
+        selection={selection}
+        onSelectionChange={setSelection}
         guardianName={guardianName}
         onGuardianNameChange={setGuardianName}
         guardianContact={guardianContact}

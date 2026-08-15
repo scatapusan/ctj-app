@@ -23,6 +23,7 @@ interface ClientCfg {
   insert?: Record<string, { error: unknown }>
   onRpc?: (fn: string, args: Record<string, unknown>) => void
   onInsert?: (table: string, payload: Record<string, unknown>) => void
+  onUpdate?: (table: string, payload: Record<string, unknown>) => void
 }
 
 function makeClient(cfg: ClientCfg) {
@@ -41,6 +42,13 @@ function makeClient(cfg: ClientCfg) {
           cfg.onInsert?.(table, payload)
           return cfg.insert?.[table] ?? { error: null }
         },
+        update: (payload: Record<string, unknown>) => {
+          cfg.onUpdate?.(table, payload)
+          return qb
+        },
+        // The update chain (`await ...update().eq().eq()`) awaits the builder
+        // itself, so the mock has to be thenable.
+        then: (resolve: (v: { error: null }) => void) => resolve({ error: null }),
       })
       return qb
     },
@@ -229,58 +237,146 @@ describe("POST /api/attend/retreat-register — existing member", () => {
   })
 })
 
-describe("POST /api/attend/retreat-register — core snapshot", () => {
+describe("POST /api/attend/retreat-register — self-selected core", () => {
   const body = () => ({
     eventId: "e1",
     memberId: "m1",
     retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: "https://x.test/b.jpg" },
   })
+  const plainMember = { id: "m1", first_name: "Plain", last_name: "Member", email: "p@x.test", is_youth_ya_core: false }
+  const coreMember = { id: "m1", first_name: "Core", last_name: "Leader", email: "c@x.test", is_youth_ya_core: true }
 
-  it("snapshots is_core=true from the member record", async () => {
+  it("stores a self-declared core choice even when the (stale) roster says otherwise", async () => {
     let payload: Record<string, unknown> | undefined
     use({
-      select: { members: { data: { id: "m1", first_name: "Core", last_name: "Leader", email: "c@x.test", is_youth_ya_core: true } } },
+      select: { members: { data: plainMember } },
       onInsert: (_t, p) => { payload = p },
     })
-    const res = await retreatPOST(req(body()))
+    const res = await retreatPOST(req({ ...body(), retreat: { ...body().retreat, is_core: true } }))
     expect(res.status).toBe(200)
     expect(payload!.is_core).toBe(true)
     // Age bracket is preserved alongside it — core never overwrites category.
     expect(payload!.category).toBe("ya")
   })
 
-  it("snapshots is_core=false for an ordinary member", async () => {
+  it("respects a roster core leader who chooses NOT to register as core", async () => {
     let payload: Record<string, unknown> | undefined
     use({
-      select: { members: { data: { id: "m1", first_name: "Plain", last_name: "Member", email: "p@x.test", is_youth_ya_core: false } } },
+      select: { members: { data: coreMember } },
       onInsert: (_t, p) => { payload = p },
     })
-    await retreatPOST(req(body()))
+    const res = await retreatPOST(req(body())) // no is_core in the payload
+    expect(res.status).toBe(200)
+    // What they chose wins — the roster flag is only a client-side prefill.
     expect(payload!.is_core).toBe(false)
   })
 
-  it("IGNORES a client that tries to declare itself core", async () => {
+  it("self-declared core NEVER touches the member record", async () => {
+    const writes: string[] = []
+    use({
+      select: { members: { data: plainMember } },
+      onInsert: (t) => { writes.push(`insert:${t}`) },
+      onUpdate: (t) => { writes.push(`update:${t}`) },
+    })
+    const res = await retreatPOST(req({ ...body(), retreat: { ...body().retreat, is_core: true } }))
+    expect(res.status).toBe(200)
+    // Exactly one write, to attendance — members is read-only in this flow, so
+    // a self-declared Core can never become is_youth_ya_core / is_admin.
+    expect(writes).toEqual(["insert:attendance"])
+  })
+
+  it("still rejects 'core' as a category — it is a label, not an age bracket", async () => {
     let payload: Record<string, unknown> | undefined
     use({
-      select: { members: { data: { id: "m1", first_name: "Plain", last_name: "Member", email: "p@x.test", is_youth_ya_core: false } } },
+      select: { members: { data: plainMember } },
       onInsert: (_t, p) => { payload = p },
     })
-    const hostile = { ...body(), is_core: true, retreat: { ...body().retreat, is_core: true, category: "core" } }
-    const res = await retreatPOST(req(hostile))
-    // 'core' is not a valid category, so the request is rejected outright…
+    const res = await retreatPOST(req({ ...body(), retreat: { ...body().retreat, category: "core" } }))
     expect(res.status).toBe(400)
-    // …and nothing was written.
     expect(payload).toBeUndefined()
   })
 
-  it("a hostile client cannot set is_core even with a valid category", async () => {
+  it("ignores a top-level is_core — only the validated retreat block counts", async () => {
     let payload: Record<string, unknown> | undefined
     use({
-      select: { members: { data: { id: "m1", first_name: "Plain", last_name: "Member", email: "p@x.test", is_youth_ya_core: false } } },
+      select: { members: { data: plainMember } },
       onInsert: (_t, p) => { payload = p },
     })
-    await retreatPOST(req({ ...body(), is_core: true, retreat: { ...body().retreat, is_core: true } }))
+    await retreatPOST(req({ ...body(), is_core: true }))
     expect(payload!.is_core).toBe(false)
+  })
+
+  it("ignores non-boolean is_core values (no truthy coercion)", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { members: { data: plainMember } },
+      onInsert: (_t, p) => { payload = p },
+    })
+    await retreatPOST(req({ ...body(), retreat: { ...body().retreat, is_core: "yes" } }))
+    expect(payload!.is_core).toBe(false)
+  })
+
+  it("core registrants skip the YA baby-photo requirement", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { members: { data: plainMember } },
+      onInsert: (_t, p) => { payload = p },
+    })
+    const res = await retreatPOST(
+      req({ ...body(), retreat: { birthdate: birthdateForAge(24), category: "ya", is_core: true } }),
+    )
+    expect(res.status).toBe(200)
+    expect(payload!.is_core).toBe(true)
+    expect(payload!.baby_photo_url).toBeNull()
+  })
+
+  it("new person: passes the choice to the RPC, backstops the attendance flag, and never sends privilege flags", async () => {
+    let rpcArgs: Record<string, unknown> | undefined
+    const updates: Array<{ table: string; payload: Record<string, unknown> }> = []
+    use({
+      rpc: { data: okMember, error: null },
+      onRpc: (_fn, args) => { rpcArgs = args },
+      onUpdate: (table, payload) => { updates.push({ table, payload }) },
+    })
+    const res = await retreatPOST(
+      req({
+        eventId: "e1",
+        email: "newcore@x.test",
+        privacyConsent: true,
+        // Hostile member payload: privilege flags must be stripped.
+        member: {
+          first_name: "New", last_name: "Core", birthdate: birthdateForAge(25),
+          is_admin: true, is_youth_ya_core: true,
+        },
+        retreat: { category: "ya", is_core: true },
+      }),
+    )
+    expect(res.status).toBe(200)
+    expect((rpcArgs!.p_retreat as Record<string, unknown>).is_core).toBe(true)
+    const sentMember = rpcArgs!.p_member as Record<string, unknown>
+    expect(sentMember.is_admin).toBeUndefined()
+    expect(sentMember.is_youth_ya_core).toBeUndefined()
+    // The pre-migration-RPC backstop touches attendance only, never members.
+    expect(updates).toEqual([{ table: "attendance", payload: { is_core: true } }])
+  })
+
+  it("new person without core does not fire the backstop update", async () => {
+    const updates: string[] = []
+    use({
+      rpc: { data: okMember, error: null },
+      onUpdate: (table) => { updates.push(table) },
+    })
+    const res = await retreatPOST(
+      req({
+        eventId: "e1",
+        email: "plainnew@x.test",
+        privacyConsent: true,
+        member: { first_name: "Plain", last_name: "New", birthdate: birthdateForAge(25) },
+        retreat: { category: "ya", baby_photo_url: "https://x.test/b.jpg" },
+      }),
+    )
+    expect(res.status).toBe(200)
+    expect(updates).toEqual([])
   })
 })
 
