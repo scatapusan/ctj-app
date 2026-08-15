@@ -116,19 +116,31 @@ describe("GET /api/admin/attendance/export — access control", () => {
     expect((await get()).status).toBe(403)
   })
 
-  it("403s for CORE — the full export is admin-only, unlike the roster", async () => {
-    vi.mocked(readSession).mockReturnValue(CORE)
-    use()
-    const res = await get()
-    expect(res.status).toBe(403)
-    // Nothing leaks in the body either.
-    expect(await res.text()).not.toContain("Marikina")
-  })
-
   it("200s for admin", async () => {
     vi.mocked(readSession).mockReturnValue(ADMIN)
     use({ attendanceRows: [MINOR_ATTENDANCE], memberRows: [MINOR_MEMBER] })
     expect((await get()).status).toBe(200)
+  })
+
+  // Ministry decision, made deliberately after the admin-only version shipped:
+  // core leaders run the retreat day-of and get the identical file, addresses
+  // and guardian contacts included. Asserted rather than assumed so that
+  // re-narrowing the gate has to be a conscious edit to this test.
+  it("gives CORE the same full export as admin, PII included", async () => {
+    const bodies: string[] = []
+    for (const session of [ADMIN, CORE]) {
+      vi.mocked(readSession).mockReturnValue(session)
+      use({ attendanceRows: [MINOR_ATTENDANCE], memberRows: [MINOR_MEMBER] })
+      const res = await get()
+      expect(res.status).toBe(200)
+      const lines = await csvLines(res)
+      const c = cells(lines[1])
+      expect(c[7]).toBe("12 Shoe Ave, Marikina") // Address
+      expect(c[8]).toBe("09171234567") // Contact Number
+      expect(c[10]).toBe("09181234567") // Guardian Contact
+      bodies.push(lines.join("\r\n"))
+    }
+    expect(bodies[0]).toBe(bodies[1])
   })
 
   it("400s without an eventId", async () => {

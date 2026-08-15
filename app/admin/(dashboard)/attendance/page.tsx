@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { type Event } from "@/lib/types"
-import { useRole } from "@/components/admin/role-provider"
 import { DataTable } from "@/components/admin/data-table"
 import { ListSkeleton } from "@/components/admin/list-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -89,7 +88,6 @@ function StatusBadge({ status }: { status: AttendanceRecord["status"] }) {
 }
 
 export default function AttendancePage() {
-  const { isSuperadmin } = useRole()
   const [events, setEvents] = useState<Event[]>([])
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [records, setRecords] = useState<AttendanceRecord[]>([])
@@ -179,9 +177,10 @@ export default function AttendancePage() {
   }
 
   /**
-   * The CSV is built server-side now: it carries every registration answer —
+   * The CSV is built server-side: it carries every registration answer —
    * birthday, address, contact number and guardian details — which the table on
-   * this page deliberately never loads, and which only admins may download.
+   * this page deliberately never loads. Available to admin and core alike, so a
+   * 403 here means the session lapsed rather than the role being wrong.
    */
   async function exportCsv() {
     if (!records.length || !selectedEventId) return
@@ -193,7 +192,7 @@ export default function AttendancePage() {
       if (!res.ok) {
         toast.error(
           res.status === 403
-            ? "Only admins can export full registration details."
+            ? "Your session has expired. Please sign in again."
             : "Couldn't build the export. Please try again.",
         )
         return
@@ -284,7 +283,7 @@ export default function AttendancePage() {
                   ` · ${records.filter((r) => r.status === "registered").length} pre-registered`}
               </span>
             </div>
-            {records.length > 0 && isSuperadmin && (
+            {records.length > 0 && (
               <div className="flex flex-col items-end gap-1">
                 <Button variant="outline" size="sm" onClick={exportCsv} disabled={exporting}>
                   {exporting ? (

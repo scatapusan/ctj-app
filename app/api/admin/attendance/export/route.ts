@@ -7,21 +7,26 @@ import type { RetreatCategory } from "@/lib/types"
 
 // Full CSV export of one event's registrations.
 //
-// ADMIN ONLY — deliberately stricter than the rest of /api/admin/attendance,
-// which is admin-or-core. The roster screens show names, categories and photos;
-// this file additionally carries every registrant's home address, personal
-// phone number, birthday and (for minors) their guardian's contact details.
-// That is the whole registration record for a group that includes 12-year-olds,
-// so it sits behind the narrower gate and is never cached.
+// Admin OR core, matching the rest of /api/admin/attendance. This was
+// admin-only when first built, and the ministry deliberately widened it: core
+// leaders run the retreat day-of and need the same file.
+//
+// Be aware of what that means when changing this route. The file carries every
+// registrant's home address, personal phone number, birthday and (for minors)
+// their guardian's contact details, for a group that includes 12-year-olds —
+// so every core-role login can download all of it. It is never cached, and a
+// downloaded copy is outside the app's control entirely. Do not widen the gate
+// further (there is no public path to this data) and do not add fields beyond
+// what the retreat form collects without asking the ministry first.
 //
 // GET ?eventId=... -> text/csv attachment
 //
-// Built on the server rather than in the browser so the role gate is actually
-// enforceable, the escaping is consistent, and the extra PII never has to be
+// Built on the server rather than in the browser so the role gate is
+// enforceable at all, the escaping is consistent, and the PII never has to be
 // loaded into the attendance table's client-side state to be exportable.
 
 export async function GET(request: Request) {
-  const guard = requireRole("admin")
+  const guard = requireRole("admin", "core")
   if (!guard.ok) return guard.response
 
   const eventId = new URL(request.url).searchParams.get("eventId") ?? ""
