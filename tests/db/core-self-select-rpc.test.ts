@@ -51,7 +51,7 @@ function rpcRetreat(member: Record<string, unknown>, retreat: Record<string, unk
 
 async function attendanceOf(memberId: string) {
   const res = await db.client.query(
-    "select status, category, is_core from attendance where member_id=$1 and event_id=$2",
+    "select status, category, is_core, baby_photo_url from attendance where member_id=$1 and event_id=$2",
     [memberId, EVENT],
   )
   return res.rows[0]
@@ -100,6 +100,18 @@ describe("register_and_checkin — self-selected core", () => {
     expect((await attendanceOf(m.id)).is_core).toBe(true)
     const fresh = await db.client.query("select is_admin, is_youth_ya_core from members where id=$1", [m.id])
     expect(fresh.rows[0]).toEqual({ is_admin: false, is_youth_ya_core: false })
+  })
+
+  it("stores a core registrant's baby photo alongside the label", async () => {
+    // Core people join the retreat game too — the photo is optional for them,
+    // never dropped when they do upload one.
+    const res = await rpcRetreat(
+      { email: "core-photo@x.test", first_name: "Core", last_name: "Photo", birthdate: "1995-06-06" },
+      { category: "ya", is_core: true, baby_photo_url: "https://example.com/core-baby.jpg" },
+    )
+    const att = await attendanceOf(res.rows[0].id)
+    expect(att.is_core).toBe(true)
+    expect(att.baby_photo_url).toBe("https://example.com/core-baby.jpg")
   })
 
   it("legacy 2-arg call still works and defaults is_core to false", async () => {

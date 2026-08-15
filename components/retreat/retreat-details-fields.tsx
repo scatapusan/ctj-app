@@ -24,6 +24,16 @@ export function suggestCategory(age: number | null): RetreatCategory | null {
   return age <= 22 ? "youth" : "ya"
 }
 
+/**
+ * Who gets the baby-photo picker: YA (required — it's their game) and Core,
+ * who join the game too but aren't blocked if they don't have a photo handy.
+ * The submit handlers use this too, so a photo picked and then hidden by a
+ * category change is never uploaded.
+ */
+export function showsBabyPhoto(selection: RetreatSelection | null): boolean {
+  return selection === "ya" || selection === "core"
+}
+
 interface RetreatDetailsFieldsProps {
   idPrefix: string
   birthdate: string
@@ -198,11 +208,16 @@ export function RetreatDetailsFields({
         </div>
       )}
 
-      {/* Baby photo — required for YA (Core registrants skip the game photo) */}
-      {selection === "ya" && (
+      {/* Baby photo — required for YA, optional for Core (they play too) */}
+      {showsBabyPhoto(selection) && (
         <div className="space-y-2">
           <Label className="text-muted-foreground">
-            Baby / Childhood Photo <span className="text-destructive">*</span>
+            Baby / Childhood Photo{" "}
+            {selection === "core" ? (
+              <span className="font-semibold">(optional)</span>
+            ) : (
+              <span className="text-destructive">*</span>
+            )}
           </Label>
           <p className="text-xs font-medium text-muted-foreground">
             A photo of you as a baby or young kid — it&apos;s for a retreat game.

@@ -23,7 +23,8 @@ import type { Member } from "@/lib/types"
 //     only. It is prefilled client-side from the roster but the registrant's
 //     choice wins (the roster is stale); admins correct mistakes in the
 //     console. It NEVER writes members.is_youth_ya_core or any privilege.
-//   * category 'ya' (and not core) -> baby_photo_url REQUIRED
+//   * category 'ya' (and not core) -> baby_photo_url REQUIRED. Core registrants
+//     MAY send one (they join the game) but are never blocked for lacking it.
 //   * age under 18   -> guardian name + contact REQUIRED
 
 // Fields a PUBLIC registrant may set (subset of the main registration form —
@@ -73,8 +74,8 @@ function validateRetreat(input: Record<string, unknown>, birthdate: string): Ret
     typeof input.baby_photo_url === "string" && input.baby_photo_url
       ? toStoredPhotoValue(input.baby_photo_url)
       : null
-  // The baby photo is for the YA game; people registering as Core skip it
-  // (the form never shows them the picker).
+  // The baby photo is required for YA. Core registrants get the same picker
+  // (optional) — whatever they upload is stored either way, just not enforced.
   if (category === "ya" && !isCore && !babyPhotoUrl) {
     return "YA/Singles registration needs a baby or childhood photo."
   }

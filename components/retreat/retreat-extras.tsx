@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { MemberSummary, RetreatSelection } from "@/lib/types"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { RetreatDetailsFields, computeAge, suggestCategory } from "./retreat-details-fields"
+import { RetreatDetailsFields, computeAge, suggestCategory, showsBabyPhoto } from "./retreat-details-fields"
 import { uploadBabyPhoto } from "./upload-baby-photo"
 import { Loader2, CheckCircle2 } from "lucide-react"
 
@@ -81,7 +81,7 @@ export function RetreatExtras({ member, eventId, walkIn, onSuccess }: RetreatExt
 
     try {
       let babyPhotoUrl: string | null = null
-      if (selection === "ya" && babyPhotoFile) {
+      if (showsBabyPhoto(selection) && babyPhotoFile) {
         try {
           babyPhotoUrl = await uploadBabyPhoto(babyPhotoFile)
         } catch {
