@@ -95,6 +95,81 @@ function validateRetreat(input: Record<string, unknown>, birthdate: string): Ret
   }
 }
 
+// Fix an EXISTING registration (the "update my details" path on /retreat).
+// Same trust level as registering — knowing the email is what gets you here,
+// exactly as it does for creating the row — and strictly attendance-scoped:
+//   * status / attended_at are NEVER touched, so this cannot un-attend anyone
+//     or mark anyone attended early.
+//   * the member record is never written (no privilege can be granted).
+// Omitted fields are KEPT, not cleared: the form deliberately never receives
+// the existing guardian details or photo path (lookup withholds them), so a
+// blind overwrite would destroy data the registrant was never shown.
+export async function PATCH(request: Request) {
+  const ip = getClientIp(request)
+  const rl = rateLimit(`retreat:${ip}`, 10, 60_000)
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please wait a moment." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
+    )
+  }
+
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
+  const eventId = typeof body.eventId === "string" ? body.eventId : ""
+  const memberId = typeof body.memberId === "string" ? body.memberId : ""
+  const retreatInput = (body.retreat ?? {}) as Record<string, unknown>
+
+  if (!eventId || !memberId) {
+    return NextResponse.json({ error: "Missing event or member." }, { status: 400 })
+  }
+
+  const birthdate = typeof retreatInput.birthdate === "string" ? retreatInput.birthdate : ""
+  if (!birthdate) return NextResponse.json({ error: "Birthday is required." }, { status: 400 })
+
+  const supabase = createRouteHandlerClient()
+
+  const { data: existing } = await supabase
+    .from("attendance")
+    .select("id, baby_photo_url, guardian_name, guardian_contact")
+    .eq("member_id", memberId)
+    .eq("event_id", eventId)
+    .maybeSingle()
+
+  if (!existing) {
+    return NextResponse.json({ error: "We couldn't find your registration." }, { status: 404 })
+  }
+
+  // Merge before validating, so "already on file" satisfies the YA photo and
+  // under-18 guardian rules without making them re-enter anything.
+  const merged = {
+    ...retreatInput,
+    baby_photo_url: retreatInput.baby_photo_url || existing.baby_photo_url,
+    guardian_name: retreatInput.guardian_name || existing.guardian_name,
+    guardian_contact: retreatInput.guardian_contact || existing.guardian_contact,
+  }
+
+  const meta = validateRetreat(merged, birthdate)
+  if (typeof meta === "string") return NextResponse.json({ error: meta }, { status: 400 })
+
+  const { error } = await supabase
+    .from("attendance")
+    .update({
+      category: meta.category,
+      is_core: meta.is_core,
+      baby_photo_url: meta.baby_photo_url,
+      guardian_name: meta.guardian_name,
+      guardian_contact: meta.guardian_contact,
+    })
+    .eq("id", existing.id)
+
+  if (error) {
+    console.error("retreat registration update error:", error)
+    return NextResponse.json({ error: "Couldn't save your changes. Please try again." }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true })
+}
+
 export async function POST(request: Request) {
   const ip = getClientIp(request)
   const rl = rateLimit(`retreat:${ip}`, 10, 60_000)

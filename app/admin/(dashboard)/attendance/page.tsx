@@ -6,7 +6,7 @@ import { DataTable } from "@/components/admin/data-table"
 import { ListSkeleton } from "@/components/admin/list-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { Download, Calendar, Users, ClipboardList } from "lucide-react"
+import { Download, Calendar, Users, ClipboardList, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -48,6 +48,30 @@ function CategorySelect({
       <option value="ya">YA</option>
       <option value="core">Core</option>
     </select>
+  )
+}
+
+/** Cancel/remove one registration. Irreversible, so it always confirms first. */
+function CancelButton({
+  record,
+  onCancel,
+}: {
+  record: AttendanceRecord
+  onCancel: (record: AttendanceRecord) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        onCancel(record)
+      }}
+      aria-label={`Cancel registration for ${record.member_name}`}
+      title="Cancel this registration"
+      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+    >
+      <Trash2 className="size-4" />
+    </button>
   )
 }
 
@@ -125,6 +149,29 @@ export default function AttendancePage() {
     } catch {
       setRecords(previous)
       toast.error("Couldn't update the category. Please try again.")
+    }
+  }
+
+  async function cancelRegistration(record: AttendanceRecord) {
+    const label = record.status === "attended" ? "attendance record" : "pre-registration"
+    const ok = window.confirm(
+      `Cancel the ${label} for ${record.member_name}?\n\n` +
+        `This removes them from this event's list and cannot be undone. ` +
+        `Their member profile is kept, and they can register again later.`,
+    )
+    if (!ok) return
+
+    const previous = records
+    setRecords((rs) => rs.filter((r) => r.id !== record.id))
+    try {
+      const res = await fetch(`/api/admin/attendance?id=${encodeURIComponent(record.id)}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error()
+      toast.success(`${record.member_name} removed from this event`)
+    } catch {
+      setRecords(previous)
+      toast.error("Couldn't cancel that registration. Please try again.")
     }
   }
 
@@ -271,6 +318,16 @@ export default function AttendancePage() {
                     )
                   },
                 },
+                {
+                  key: "cancel",
+                  label: "",
+                  render: (item) => (
+                    <CancelButton
+                      record={item as unknown as AttendanceRecord}
+                      onCancel={cancelRegistration}
+                    />
+                  ),
+                },
               ]}
               searchKeys={["member_name", "email"]}
               searchPlaceholder="Search attendees..."
@@ -284,7 +341,10 @@ export default function AttendancePage() {
                       <p className="text-xs text-muted-foreground truncate">{r.email}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <CategorySelect record={r} onChange={changeCategory} />
+                      <div className="flex items-center gap-1">
+                        <CategorySelect record={r} onChange={changeCategory} />
+                        <CancelButton record={r} onCancel={cancelRegistration} />
+                      </div>
                       <StatusBadge status={r.status} />
                       <span className="text-xs text-accent/80 font-medium">
                         {format(new Date(r.checked_in_at), "h:mm a")}

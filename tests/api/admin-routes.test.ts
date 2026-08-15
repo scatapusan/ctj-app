@@ -10,7 +10,7 @@ import { GET as membersGET } from "@/app/api/admin/members/route"
 import { GET as memberGET, PATCH as memberPATCH, DELETE as memberDELETE } from "@/app/api/admin/members/[id]/route"
 import { POST as eventCreate } from "@/app/api/admin/events/route"
 import { PATCH as eventPATCH, DELETE as eventDELETE } from "@/app/api/admin/events/[id]/route"
-import { PATCH as attendancePATCH } from "@/app/api/admin/attendance/route"
+import { PATCH as attendancePATCH, DELETE as attendanceDELETE } from "@/app/api/admin/attendance/route"
 
 const ADMIN = { memberId: "x", email: "a@ctj.test", role: "admin" as const, iat: 0 }
 const CORE = { memberId: "y", email: "c@ctj.test", role: "core" as const, iat: 0 }
@@ -144,6 +144,65 @@ describe("attendance category correction — admin OR core", () => {
     await attendancePATCH(patch({ id: "a1", category: "core" }))
     await attendancePATCH(patch({ id: "a1", category: "youth" }))
     expect(updates).toEqual([{ is_core: true }, { category: "youth", is_core: false }])
+  })
+})
+
+describe("cancel a registration — admin only (destructive)", () => {
+  const del = (id?: string) =>
+    new Request(
+      `http://localhost/api/admin/attendance${id === undefined ? "" : `?id=${encodeURIComponent(id)}`}`,
+      { method: "DELETE" },
+    )
+
+  it("403 without session", async () => {
+    as(null)
+    expect((await attendanceDELETE(del("a1"))).status).toBe(403)
+  })
+  it("FORBIDDEN for core — unlike the category fix, this destroys data", async () => {
+    as(CORE)
+    expect((await attendanceDELETE(del("a1"))).status).toBe(403)
+  })
+  it("allowed for admin", async () => {
+    as(ADMIN)
+    expect((await attendanceDELETE(del("a1"))).status).toBe(200)
+  })
+  it("400 without an id", async () => {
+    as(ADMIN)
+    expect((await attendanceDELETE(del())).status).toBe(400)
+  })
+  it("404 when the registration is already gone", async () => {
+    const qb: Record<string, unknown> = {}
+    Object.assign(qb, {
+      select: () => qb,
+      eq: () => qb,
+      delete: () => qb,
+      maybeSingle: async () => ({ data: null, error: null }),
+      then: (resolve: (v: unknown) => void) => resolve({ error: null }),
+    })
+    vi.mocked(createRouteHandlerClient).mockReturnValue({ from: () => qb } as never)
+    as(ADMIN)
+    expect((await attendanceDELETE(del("gone"))).status).toBe(404)
+  })
+  it("deletes the row and removes the baby photo from storage", async () => {
+    const deleted: string[] = []
+    const removed: string[][] = []
+    const qb: Record<string, unknown> = {}
+    Object.assign(qb, {
+      select: () => qb,
+      eq: (_col: string, val: string) => { deleted.push(val); return qb },
+      delete: () => qb,
+      maybeSingle: async () => ({ data: { id: "a1", baby_photo_url: "baby-1.jpg" }, error: null }),
+      then: (resolve: (v: unknown) => void) => resolve({ error: null }),
+    })
+    vi.mocked(createRouteHandlerClient).mockReturnValue({
+      from: () => qb,
+      storage: { from: () => ({ remove: async (paths: string[]) => { removed.push(paths); return {} } }) },
+    } as never)
+    as(ADMIN)
+    const res = await attendanceDELETE(del("a1"))
+    expect(res.status).toBe(200)
+    expect(deleted).toContain("a1")
+    expect(removed).toEqual([["baby-1.jpg"]])
   })
 })
 

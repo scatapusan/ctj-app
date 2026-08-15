@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { MemberSummary } from "@/lib/types"
+import type { MemberSummary, RetreatRegistrationSummary } from "@/lib/types"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -9,8 +9,15 @@ import { Loader2, Mail } from "lucide-react"
 
 interface RetreatEmailStepProps {
   eventId: string
-  /** Known member, plus whether an attendance row for this event already exists. */
-  onMemberFound: (member: MemberSummary, alreadyRegistered: boolean) => void
+  /**
+   * Known member, whether an attendance row for this event already exists, and
+   * (when it does) its non-PII summary so the update form can prefill.
+   */
+  onMemberFound: (
+    member: MemberSummary,
+    alreadyRegistered: boolean,
+    registration: RetreatRegistrationSummary | null,
+  ) => void
   onNewPerson: (email: string) => void
 }
 
@@ -58,7 +65,11 @@ export function RetreatEmailStep({ eventId, onMemberFound, onNewPerson }: Retrea
         onNewPerson(trimmed)
         return
       }
-      onMemberFound(data.member as MemberSummary, data.alreadyCheckedIn === true)
+      onMemberFound(
+        data.member as MemberSummary,
+        data.alreadyCheckedIn === true,
+        (data.registration ?? null) as RetreatRegistrationSummary | null,
+      )
     } catch {
       setError("Network error. Please check your connection.")
     } finally {

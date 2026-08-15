@@ -1,8 +1,11 @@
 # Retreat Registration — Core Leaders Test Run
 
-**Goal:** core leaders register themselves FIRST (these are real registrations —
-there is no un-register path, so only ask leaders who are definitely coming) and
-catch anything broken before the QR goes out to everyone.
+**Goal:** core leaders register themselves FIRST (these are real registrations)
+and catch anything broken before the QR goes out to everyone.
+
+Registrants can now fix their own answers afterwards ("Update my details" on the
+already-registered screen), and admins can cancel a registration outright from
+**Admin → Attendance**, so a mistake is no longer permanent.
 
 ## Before you send this
 
@@ -40,13 +43,14 @@ if that isn't how you normally address the group.
 >    Please also upload a baby/childhood photo — it's optional for Core, but
 >    you're in the game too, and it tests the upload. Try it on mobile data,
 >    not just WiFi. Photos must be under 5MB; if it fails you should see "Your
->    photo couldn't be uploaded." (You can't change your own registration
->    afterwards — tell me what you picked and I'll correct it if needed.)
-> 3. Does everything look right on YOUR phone? Screenshot anything weird.
-> 4. After submitting you should see **"You're pre-registered!"** — if you see
+>    photo couldn't be uploaded."
+> 3. After submitting you should see **"You're pre-registered!"** — if you see
 >    an error instead, screenshot it and send it here.
-> 5. Try registering twice — the second time should say you're already
->    registered, not error out.
+> 4. Now enter your email a SECOND time. You should see "You're on the list!"
+>    (not an error) with an **Update my details** button. Try it — change your
+>    category or add a photo, save, and check it sticks. Your spot should not
+>    be lost, and it should say "Changes saved!"
+> 5. Does everything look right on YOUR phone? Screenshot anything weird.
 >
 > Report anything weird here. Salamat! 🙏
 
@@ -73,8 +77,10 @@ bracket; picking Youth or YA clears the Core label.
 | Core leader uploads a baby photo | Optional-for-Core upload works and is kept |
 | Leader picks YA / Singles | Required upload works on real phones/networks |
 | Registering twice | Friendly already-registered screen |
+| Leader edits via "Update my details" | Self-service fixes work, spot is kept |
 | Various phones | New UI on real devices, weak-signal upload behavior |
 | You change a category in Admin → Attendance | The correction path works |
+| You cancel a test registration | Removal works and frees them to re-register |
 
 ## For you (admin) during the test
 
@@ -103,5 +109,9 @@ bracket; picking Youth or YA clears the Core label.
    desk is recorded as *pre-registered* only — you still have to tap **Mark
    attended** afterwards. Only the admin walk-in button marks attendance in one
    step.
-4. Marking is one-way — there is no unmark button, so a mis-tap needs a database
-   fix. Tap carefully.
+4. Marking attended is one-way — there is still no "unmark" button, so tap
+   carefully. What you *can* do from **Admin → Attendance** is cancel the
+   registration outright (trash icon, admin only, asks you to confirm). That
+   removes them from this event entirely — their member profile is kept and
+   they can register again — so use it for "they're not coming", not to undo a
+   mis-tap on someone who is standing in front of you.

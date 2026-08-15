@@ -14,13 +14,14 @@ vi.mock("@/lib/attend-sheets", () => ({
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { syncMemberToSheet, syncAttendanceToSheet } from "@/lib/google-sheets"
 import { pushRegistrationToSheets, pushAttendanceToSheets } from "@/lib/attend-sheets"
-import { POST as retreatPOST } from "@/app/api/attend/retreat-register/route"
+import { POST as retreatPOST, PATCH as retreatPATCH } from "@/app/api/attend/retreat-register/route"
 import { __resetRateLimit } from "@/lib/rate-limit"
 
 interface ClientCfg {
   rpc?: { data: unknown; error: unknown }
   select?: Record<string, { data: unknown; error?: unknown }>
   insert?: Record<string, { error: unknown }>
+  updateError?: unknown
   onRpc?: (fn: string, args: Record<string, unknown>) => void
   onInsert?: (table: string, payload: Record<string, unknown>) => void
   onUpdate?: (table: string, payload: Record<string, unknown>) => void
@@ -48,7 +49,7 @@ function makeClient(cfg: ClientCfg) {
         },
         // The update chain (`await ...update().eq().eq()`) awaits the builder
         // itself, so the mock has to be thenable.
-        then: (resolve: (v: { error: null }) => void) => resolve({ error: null }),
+        then: (resolve: (v: { error: unknown }) => void) => resolve({ error: cfg.updateError ?? null }),
       })
       return qb
     },
@@ -478,6 +479,146 @@ describe("POST /api/attend/retreat-register — walk-in mode (day-of)", () => {
     expect(insertPayload!.status).toBe("registered")
     expect(insertPayload!.attended_at).toBeNull()
     expect(pushAttendanceToSheets).not.toHaveBeenCalled()
+  })
+})
+
+describe("PATCH /api/attend/retreat-register — fix an existing registration", () => {
+  const existingRow = {
+    id: "a1",
+    baby_photo_url: "baby-existing.jpg",
+    guardian_name: "Maria DelaCruz",
+    guardian_contact: "0917 000 1111",
+  }
+  const patchReq = (body: unknown, ip?: string) =>
+    new Request("http://localhost/api/attend/retreat-register", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "x-forwarded-for": ip ?? `10.1.0.${++ipCounter}`,
+      },
+      body: JSON.stringify(body),
+    })
+  const body = () => ({
+    eventId: "e1",
+    memberId: "m1",
+    retreat: { birthdate: birthdateForAge(24), category: "ya" },
+  })
+
+  it("updates ONLY the retreat answers — never status, attended_at, or the member row", async () => {
+    const writes: { table: string; payload: Record<string, unknown> }[] = []
+    use({
+      select: { attendance: { data: existingRow } },
+      onUpdate: (table, payload) => { writes.push({ table, payload }) },
+      onInsert: (table, payload) => { writes.push({ table, payload }) },
+    })
+    const res = await retreatPATCH(patchReq(body()))
+    expect(res.status).toBe(200)
+    expect(writes.length).toBe(1)
+    expect(writes[0].table).toBe("attendance")
+    // The exact field set matters: anything extra would be a way to mark
+    // yourself attended (or un-attend) from a public endpoint.
+    expect(Object.keys(writes[0].payload).sort()).toEqual([
+      "baby_photo_url", "category", "guardian_contact", "guardian_name", "is_core",
+    ])
+  })
+
+  it("KEEPS the existing photo and guardian details when the form omits them", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { attendance: { data: existingRow } },
+      onUpdate: (_t, p) => { payload = p },
+    })
+    // A YA registrant who only wants to switch to Core sends no photo — the
+    // form was never given the old one, so a blind write would erase it.
+    const res = await retreatPATCH(
+      patchReq({ ...body(), retreat: { ...body().retreat, is_core: true } }),
+    )
+    expect(res.status).toBe(200)
+    expect(payload!.baby_photo_url).toBe("baby-existing.jpg")
+    expect(payload!.guardian_name).toBe("Maria DelaCruz")
+    expect(payload!.guardian_contact).toBe("0917 000 1111")
+    expect(payload!.is_core).toBe(true)
+  })
+
+  it("replaces the photo when a new one IS supplied", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { attendance: { data: existingRow } },
+      onUpdate: (_t, p) => { payload = p },
+    })
+    await retreatPATCH(
+      patchReq({
+        ...body(),
+        retreat: { ...body().retreat, baby_photo_url: "https://x.test/new-baby.jpg" },
+      }),
+    )
+    expect(payload!.baby_photo_url).toBe("https://x.test/new-baby.jpg")
+  })
+
+  it("lets a registrant add a photo to a Core registration that had none", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { attendance: { data: { id: "a1", baby_photo_url: null, guardian_name: null, guardian_contact: null } } },
+      onUpdate: (_t, p) => { payload = p },
+    })
+    const res = await retreatPATCH(
+      patchReq({
+        ...body(),
+        retreat: { ...body().retreat, is_core: true, baby_photo_url: "https://x.test/late-baby.jpg" },
+      }),
+    )
+    expect(res.status).toBe(200)
+    expect(payload!.is_core).toBe(true)
+    expect(payload!.baby_photo_url).toBe("https://x.test/late-baby.jpg")
+  })
+
+  it("404s when there is no registration to update", async () => {
+    use({ select: { attendance: { data: null } } })
+    const res = await retreatPATCH(patchReq(body()))
+    expect(res.status).toBe(404)
+  })
+
+  it("400s on a missing birthday, member, or event", async () => {
+    use({ select: { attendance: { data: existingRow } } })
+    expect((await retreatPATCH(patchReq({ ...body(), memberId: "" }))).status).toBe(400)
+    expect((await retreatPATCH(patchReq({ ...body(), eventId: "" }))).status).toBe(400)
+    expect((await retreatPATCH(patchReq({ ...body(), retreat: { category: "ya" } }))).status).toBe(400)
+  })
+
+  it("applies the same validation as registering ('core' is still not a category)", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { attendance: { data: existingRow } },
+      onUpdate: (_t, p) => { payload = p },
+    })
+    const res = await retreatPATCH(
+      patchReq({ ...body(), retreat: { ...body().retreat, category: "core" } }),
+    )
+    expect(res.status).toBe(400)
+    expect(payload).toBeUndefined()
+  })
+
+  it("rejects a YA update when no photo exists and none is supplied", async () => {
+    use({
+      select: { attendance: { data: { id: "a1", baby_photo_url: null, guardian_name: null, guardian_contact: null } } },
+    })
+    const res = await retreatPATCH(patchReq(body()))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toMatch(/baby/i)
+  })
+
+  it("500s cleanly when the update fails", async () => {
+    use({ select: { attendance: { data: existingRow } }, updateError: { message: "boom" } })
+    const res = await retreatPATCH(patchReq(body()))
+    expect(res.status).toBe(500)
+  })
+
+  it("is rate limited like the register path", async () => {
+    use({ select: { attendance: { data: existingRow } } })
+    const ip = "10.7.7.7"
+    for (let i = 0; i < 10; i++) await retreatPATCH(patchReq(body(), ip))
+    const res = await retreatPATCH(patchReq(body(), ip))
+    expect(res.status).toBe(429)
   })
 })
 
