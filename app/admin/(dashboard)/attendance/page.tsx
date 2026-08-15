@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { categoryLabel, type Event } from "@/lib/types"
+import { type Event } from "@/lib/types"
+import { useRole } from "@/components/admin/role-provider"
 import { DataTable } from "@/components/admin/data-table"
 import { ListSkeleton } from "@/components/admin/list-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { Download, Calendar, Users, ClipboardList, Trash2 } from "lucide-react"
+import { Download, Calendar, Users, ClipboardList, Trash2, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -88,11 +89,13 @@ function StatusBadge({ status }: { status: AttendanceRecord["status"] }) {
 }
 
 export default function AttendancePage() {
+  const { isSuperadmin } = useRole()
   const [events, setEvents] = useState<Event[]>([])
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [recordsLoading, setRecordsLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -175,24 +178,42 @@ export default function AttendancePage() {
     }
   }
 
-  function exportCsv() {
+  /**
+   * The CSV is built server-side now: it carries every registration answer —
+   * birthday, address, contact number and guardian details — which the table on
+   * this page deliberately never loads, and which only admins may download.
+   */
+  async function exportCsv() {
     if (!records.length || !selectedEventId) return
+    setExporting(true)
+    try {
+      const res = await fetch(
+        `/api/admin/attendance/export?eventId=${encodeURIComponent(selectedEventId)}`,
+      )
+      if (!res.ok) {
+        toast.error(
+          res.status === 403
+            ? "Only admins can export full registration details."
+            : "Couldn't build the export. Please try again.",
+        )
+        return
+      }
 
-    const event = events.find((e) => e.id === selectedEventId)
-    const header = "Name,Email,Category,Status,Registered At,Attended At"
-    const rows = records.map(
-      (r) =>
-        `"${r.member_name}","${r.email}","${categoryLabel(r.category, r.is_core)}","${r.status}","${format(new Date(r.checked_in_at), "yyyy-MM-dd HH:mm:ss")}","${r.attended_at ? format(new Date(r.attended_at), "yyyy-MM-dd HH:mm:ss") : ""}"`
-    )
-    const csv = [header, ...rows].join("\n")
-
-    const blob = new Blob([csv], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `attendance-${event?.name.replace(/\s+/g, "-").toLowerCase() || "export"}-${format(new Date(), "yyyy-MM-dd")}.csv`
-    link.click()
-    URL.revokeObjectURL(url)
+      const blob = await res.blob()
+      const filename =
+        res.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1] ??
+        "attendance-export.csv"
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error("Network error building the export. Please try again.")
+    } finally {
+      setExporting(false)
+    }
   }
 
   const selectedEvent = events.find((e) => e.id === selectedEventId)
@@ -263,11 +284,20 @@ export default function AttendancePage() {
                   ` · ${records.filter((r) => r.status === "registered").length} pre-registered`}
               </span>
             </div>
-            {records.length > 0 && (
-              <Button variant="outline" size="sm" onClick={exportCsv}>
-                <Download className="size-4 mr-2" />
-                Export CSV
-              </Button>
+            {records.length > 0 && isSuperadmin && (
+              <div className="flex flex-col items-end gap-1">
+                <Button variant="outline" size="sm" onClick={exportCsv} disabled={exporting}>
+                  {exporting ? (
+                    <Loader2 className="size-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="size-4 mr-2" />
+                  )}
+                  Export CSV
+                </Button>
+                <p className="text-[11px] text-muted-foreground">
+                  Includes birthday, address, contact and guardian details.
+                </p>
+              </div>
             )}
           </div>
 

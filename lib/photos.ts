@@ -6,6 +6,15 @@ export const PHOTO_BUCKET = "member-photos"
  *  that a leaked link is useless soon after. */
 export const PHOTO_URL_TTL_SECONDS = 600 // 10 minutes
 
+/**
+ * Longer TTL for links written into a downloaded CSV. A 10-minute link is dead
+ * before the file finishes downloading, so exports get a week — long enough to
+ * be useful for retreat prep, short enough that a mislaid spreadsheet stops
+ * granting photo access soon after. Anyone who needs a link after it lapses
+ * re-exports; the "Baby Photo File" column never expires.
+ */
+export const PHOTO_EXPORT_TTL_SECONDS = 7 * 24 * 60 * 60 // 7 days
+
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024
 export const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]
 
