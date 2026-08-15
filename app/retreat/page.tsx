@@ -4,14 +4,14 @@ import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { createBrowserClient } from "@/lib/supabase"
-import type { Event, MemberSummary } from "@/lib/types"
+import type { Event, MemberSummary, RetreatRegistrationSummary } from "@/lib/types"
 import { RetreatEmailStep } from "@/components/retreat/retreat-email-step"
 import { RetreatForm } from "@/components/retreat/retreat-form"
 import { RetreatExtras } from "@/components/retreat/retreat-extras"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, CalendarDays, CheckCircle2, Loader2, PartyPopper } from "lucide-react"
+import { ArrowLeft, CalendarDays, CheckCircle2, Loader2, PartyPopper, Pencil } from "lucide-react"
 
-type RetreatStep = "email" | "new-form" | "member-extras" | "already" | "done"
+type RetreatStep = "email" | "new-form" | "member-extras" | "already" | "update" | "done"
 
 const FILIPINO_DAYS = ["Linggo", "Lunes", "Martes", "Miyerkules", "Huwebes", "Biyernes", "Sabado"]
 
@@ -35,7 +35,9 @@ function RetreatPageContent() {
   const [step, setStep] = useState<RetreatStep>("email")
   const [email, setEmail] = useState("")
   const [member, setMember] = useState<MemberSummary | null>(null)
+  const [registration, setRegistration] = useState<RetreatRegistrationSummary | null>(null)
   const [firstName, setFirstName] = useState("")
+  const [updated, setUpdated] = useState(false)
 
   useEffect(() => {
     if (!eventParam) return
@@ -59,10 +61,20 @@ function RetreatPageContent() {
     fetchEvent()
   }, [eventParam])
 
-  function handleMemberFound(m: MemberSummary, alreadyRegistered: boolean) {
+  function handleMemberFound(
+    m: MemberSummary,
+    alreadyRegistered: boolean,
+    reg: RetreatRegistrationSummary | null,
+  ) {
     setMember(m)
+    setRegistration(reg)
     setFirstName(m.first_name)
     setStep(alreadyRegistered ? "already" : "member-extras")
+  }
+
+  function handleUpdated() {
+    setUpdated(true)
+    setStep("done")
   }
 
   function handleNewPerson(e: string) {
@@ -75,7 +87,15 @@ function RetreatPageContent() {
     setStep("done")
   }
 
-  const showBack = step === "new-form" || step === "member-extras"
+  /** Back to the email step for a fresh person — clears the previous one. */
+  function restart() {
+    setMember(null)
+    setRegistration(null)
+    setUpdated(false)
+    setStep("email")
+  }
+
+  const showBack = step === "new-form" || step === "member-extras" || step === "update"
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -112,7 +132,7 @@ function RetreatPageContent() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setStep("email")}
+            onClick={() => (step === "update" ? setStep("already") : restart())}
             className="text-muted-foreground hover:text-foreground min-h-[44px]"
           >
             <ArrowLeft className="size-4 mr-1" />
@@ -164,6 +184,15 @@ function RetreatPageContent() {
             <RetreatExtras member={member} eventId={eventParam} walkIn={walkIn} onSuccess={handleSuccess} />
           )}
 
+          {eventState === "ok" && step === "update" && member && (
+            <RetreatExtras
+              member={member}
+              eventId={eventParam}
+              existing={registration ?? { category: null, is_core: false, has_baby_photo: false }}
+              onSuccess={handleUpdated}
+            />
+          )}
+
           {eventState === "ok" && step === "already" && (
             <div className="flex flex-col items-center text-center space-y-5 py-6" role="status">
               <div className="w-20 h-20 rounded-full bg-secondary border-[2.5px] border-foreground flex items-center justify-center">
@@ -177,10 +206,19 @@ function RetreatPageContent() {
                 </p>
               </div>
               <Button
+                variant="outline"
+                size="lg"
+                className="w-full min-h-[48px] text-base"
+                onClick={() => setStep("update")}
+              >
+                <Pencil className="size-4 mr-2" />
+                Update my details
+              </Button>
+              <Button
                 variant="ghost"
                 size="lg"
                 className="w-full min-h-[44px] text-base text-muted-foreground"
-                onClick={() => setStep("email")}
+                onClick={restart}
               >
                 Sign up another person
               </Button>
@@ -194,11 +232,21 @@ function RetreatPageContent() {
               </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-extrabold text-foreground">
-                  {walkIn ? "You're checked in!" : "You're pre-registered!"}
+                  {updated ? "Changes saved!" : walkIn ? "You're checked in!" : "You're pre-registered!"}
                 </h2>
                 <p className="text-lg text-muted-foreground">
-                  {walkIn ? "Welcome to" : "See you at"} {event?.name ?? "the retreat"},{" "}
-                  <span className="font-bold text-accent">{firstName}</span> — kita-kits!
+                  {updated ? (
+                    <>
+                      Your registration for {event?.name ?? "the retreat"} is
+                      updated, <span className="font-bold text-accent">{firstName}</span> —
+                      your spot is still saved.
+                    </>
+                  ) : (
+                    <>
+                      {walkIn ? "Welcome to" : "See you at"} {event?.name ?? "the retreat"},{" "}
+                      <span className="font-bold text-accent">{firstName}</span> — kita-kits!
+                    </>
+                  )}
                 </p>
                 {event && (
                   <p className="text-sm font-semibold text-muted-foreground">
@@ -210,7 +258,7 @@ function RetreatPageContent() {
                 variant="ghost"
                 size="lg"
                 className="w-full min-h-[44px] text-base text-muted-foreground"
-                onClick={() => setStep("email")}
+                onClick={restart}
               >
                 Sign up another person
               </Button>

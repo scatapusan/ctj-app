@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/admin-auth"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
+import { PHOTO_BUCKET, isLegacyAbsoluteUrl } from "@/lib/photos"
 
 // Attendance records for one event (enriched with member name/email). Admin or core.
 export async function GET(request: Request) {
@@ -96,4 +97,53 @@ export async function PATCH(request: Request) {
   if (!data) return NextResponse.json({ error: "Attendance row not found." }, { status: 404 })
 
   return NextResponse.json({ ok: true, record: data })
+}
+
+// Cancel/remove ONE registration (pre-registered or attended). Admin only:
+// this is irreversible and matches the member-delete precedent, whereas the
+// category correction above is a label fix any core leader may make.
+//
+// The member record is untouched — only their registration for this event goes
+// away, which also frees the (member_id, event_id) unique constraint so they
+// can register again if they change their mind. Their baby photo is removed
+// best-effort: they cancelled, so we should not keep their childhood photo.
+export async function DELETE(request: Request) {
+  const guard = requireRole("admin")
+  if (!guard.ok) return guard.response
+
+  const url = new URL(request.url)
+  let id = url.searchParams.get("id") ?? ""
+  if (!id) {
+    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
+    id = typeof body.id === "string" ? body.id : ""
+  }
+  if (!id) return NextResponse.json({ error: "Missing attendance id." }, { status: 400 })
+
+  const supabase = createRouteHandlerClient()
+
+  const { data: row } = await supabase
+    .from("attendance")
+    .select("id, baby_photo_url")
+    .eq("id", id)
+    .maybeSingle()
+  if (!row) return NextResponse.json({ error: "Registration not found." }, { status: 404 })
+
+  const { error } = await supabase.from("attendance").delete().eq("id", id)
+  if (error) {
+    console.error("admin attendance delete error:", error)
+    return NextResponse.json({ error: "Couldn't cancel this registration." }, { status: 500 })
+  }
+
+  // Best-effort, after the row is gone: a storage hiccup must not resurrect a
+  // cancellation the admin already confirmed.
+  const stored = row.baby_photo_url as string | null
+  if (stored && !isLegacyAbsoluteUrl(stored)) {
+    try {
+      await supabase.storage.from(PHOTO_BUCKET).remove([stored])
+    } catch (err) {
+      console.error("baby photo delete failed:", err)
+    }
+  }
+
+  return NextResponse.json({ ok: true })
 }

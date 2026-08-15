@@ -101,6 +101,18 @@ export interface Attendance {
 }
 
 /**
+ * The state of an EXISTING retreat registration, returned by /api/attend/lookup
+ * so the update form can prefill the category and say whether a photo is
+ * already on file. Deliberately carries no PII — the guardian fields and the
+ * photo's storage path are never exposed to a caller who only knows an email.
+ */
+export interface RetreatRegistrationSummary {
+  category: RetreatCategory | null
+  is_core: boolean
+  has_baby_photo: boolean
+}
+
+/**
  * Minimal member identity returned by /api/attend/lookup. Used by the pre-edit
  * check-in screens; the full Member (with PII) is only fetched after the PIN via
  * /api/attend/profile.

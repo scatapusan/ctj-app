@@ -36,14 +36,30 @@ export async function POST(request: Request) {
   if (!member) return NextResponse.json({ found: false })
 
   let alreadyCheckedIn = false
+  // Non-PII summary of an existing registration, so the retreat update form can
+  // prefill the category instead of silently resetting it. Guardian details and
+  // the photo path are NOT returned — only whether a photo exists.
+  let registration: {
+    category: string | null
+    is_core: boolean
+    has_baby_photo: boolean
+  } | null = null
+
   if (eventId) {
     const { data: attendance } = await supabase
       .from("attendance")
-      .select("id")
+      .select("id, category, is_core, baby_photo_url")
       .eq("member_id", member.id)
       .eq("event_id", eventId)
       .maybeSingle()
     alreadyCheckedIn = !!attendance
+    if (attendance) {
+      registration = {
+        category: (attendance as { category?: string | null }).category ?? null,
+        is_core: (attendance as { is_core?: boolean }).is_core === true,
+        has_baby_photo: !!(attendance as { baby_photo_url?: string | null }).baby_photo_url,
+      }
+    }
   }
 
   return NextResponse.json({
@@ -60,5 +76,6 @@ export async function POST(request: Request) {
       is_core: member.is_youth_ya_core === true,
     },
     alreadyCheckedIn,
+    registration,
   })
 }

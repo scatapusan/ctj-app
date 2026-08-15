@@ -63,9 +63,11 @@ describe("POST /api/attend/lookup", () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json.found).toBe(true)
-    // is_core drives the read-only Core badge on the retreat form.
+    // is_core prefills the Core option on the retreat form.
     expect(json.member).toEqual({ ...summary, is_core: false })
     expect(json.alreadyCheckedIn).toBe(false)
+    // No registration to summarise when they haven't registered.
+    expect(json.registration).toBeNull()
     // Must NOT leak PII columns.
     expect(Object.keys(json.member).sort()).toEqual([
       "first_name", "id", "is_core", "is_guest", "last_name", "photo_url",
@@ -90,6 +92,36 @@ describe("POST /api/attend/lookup", () => {
     use({ maybeSingle: { members: { data: summary }, attendance: { data: { id: "a1" } } } })
     const res = await lookupPOST(req({ email: "juan@x.test", eventId: "e1" }))
     expect((await res.json()).alreadyCheckedIn).toBe(true)
+  })
+
+  it("summarises an existing registration WITHOUT leaking guardian PII or the photo path", async () => {
+    // Anyone who knows an email can reach this endpoint, so the update form is
+    // told the category and that a photo exists — never the guardian's name or
+    // number, and never the storage path of a child's photo.
+    use({
+      maybeSingle: {
+        members: { data: summary },
+        attendance: {
+          data: {
+            id: "a1", category: "ya", is_core: true, baby_photo_url: "baby-secret.jpg",
+            guardian_name: "Maria DelaCruz", guardian_contact: "0917 000 1111",
+          },
+        },
+      },
+    })
+    const res = await lookupPOST(req({ email: "juan@x.test", eventId: "e1" }))
+    const json = await res.json()
+    expect(json.registration).toEqual({ category: "ya", is_core: true, has_baby_photo: true })
+    const serialized = JSON.stringify(json)
+    expect(serialized).not.toContain("baby-secret.jpg")
+    expect(serialized).not.toContain("Maria DelaCruz")
+    expect(serialized).not.toContain("0917 000 1111")
+  })
+
+  it("omits the registration summary entirely when no eventId is given", async () => {
+    use({ maybeSingle: { members: { data: summary } } })
+    const res = await lookupPOST(req({ email: "juan@x.test" }))
+    expect((await res.json()).registration).toBeNull()
   })
 
   it("returns found=false for an unknown email (no enumeration of details)", async () => {
