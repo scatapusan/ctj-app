@@ -4,7 +4,14 @@ import { MEMBER_COLUMNS } from "@/lib/supabase"
 import { verifyPinServer } from "@/lib/pin-server"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
 import { syncMemberToSheet } from "@/lib/google-sheets"
+import { signPhoto, toStoredPhotoValue } from "@/lib/photos"
 import type { Member } from "@/lib/types"
+
+/** Attach a display-ready photo URL while preserving the stored path for saves. */
+async function withPhoto(supabase: ReturnType<typeof createRouteHandlerClient>, member: Record<string, unknown>) {
+  const stored = (member.photo_url as string | null) ?? null
+  return { ...member, photo_path: stored, photo_url: await signPhoto(supabase, stored) }
+}
 
 // Fields a member may edit about themselves. Excludes email, pin, is_guest, and
 // the privilege flags (is_admin, is_youth_ya_core) so a profile edit can never
@@ -47,7 +54,7 @@ export async function POST(request: Request) {
   if (error || !member) {
     return NextResponse.json({ error: "Profile not found." }, { status: 404 })
   }
-  return NextResponse.json({ ok: true, member })
+  return NextResponse.json({ ok: true, member: await withPhoto(supabase, member) })
 }
 
 // Save profile edits — gated behind the member's PIN.
@@ -70,6 +77,10 @@ export async function PUT(request: Request) {
   for (const k of EDITABLE_FIELDS) {
     if (input[k] !== undefined) update[k] = input[k]
   }
+  // Never persist a signed URL, whatever the client echoed back.
+  if ("photo_url" in update) {
+    update.photo_url = toStoredPhotoValue(update.photo_url as string | null)
+  }
 
   const { data: updated, error } = await supabase
     .from("members")
@@ -90,5 +101,5 @@ export async function PUT(request: Request) {
     console.error("Sheets sync (profile update) failed:", err)
   }
 
-  return NextResponse.json({ ok: true, member: updated })
+  return NextResponse.json({ ok: true, member: await withPhoto(supabase, updated) })
 }

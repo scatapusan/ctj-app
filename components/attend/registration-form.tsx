@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { createBrowserClient } from "@/lib/supabase"
 import { toast } from "@/lib/toast"
+import { uploadPhoto } from "@/components/retreat/upload-baby-photo"
 import { differenceInYears, parse } from "date-fns"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -118,27 +118,17 @@ export function RegistrationForm({
     setError(null)
 
     try {
-      const supabase = createBrowserClient()
       let photoUrl: string | null = null
 
       if (photoFile) {
-        const ext = photoFile.name.split(".").pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-
-        const { error: uploadError } = await supabase.storage
-          .from("member-photos")
-          .upload(fileName, photoFile)
-
-        if (uploadError) {
-          console.error("Photo upload error:", uploadError)
+        // Uploads go through the server route: the bucket is private and the
+        // browser has no storage access. Stores a path, not a URL.
+        try {
+          photoUrl = await uploadPhoto(photoFile, "profile")
+        } catch {
           toast.warning("Profile photo couldn't be uploaded", {
             description: "We saved your registration — try adding a photo later.",
           })
-        } else {
-          const { data: urlData } = supabase.storage
-            .from("member-photos")
-            .getPublicUrl(fileName)
-          photoUrl = urlData.publicUrl
         }
       }
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/admin-auth"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { pushAttendanceToSheets } from "@/lib/attend-sheets"
+import { signPhotos } from "@/lib/photos"
 
 // Staff day-of check-in (admin or core).
 //
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
 
   const { data: rows, error } = await supabase
     .from("attendance")
-    .select("id, member_id, status, checked_in_at, attended_at, category, guardian_name, guardian_contact")
+    .select("id, member_id, status, checked_in_at, attended_at, category, is_core, baby_photo_url, guardian_name, guardian_contact")
     .eq("event_id", eventId)
     .order("checked_in_at", { ascending: true })
 
@@ -43,6 +44,8 @@ export async function GET(request: Request) {
       .select("id, first_name, last_name, nickname, is_guest")
       .in("id", memberIds)
     const memberMap = new Map((members ?? []).map((m) => [m.id, m]))
+    // Baby photos live in a private bucket — sign them for signed-in staff only.
+    const signed = await signPhotos(supabase, list.map((r) => r.baby_photo_url))
     roster = list.map((r) => {
       const m = memberMap.get(r.member_id)
       return {
@@ -55,6 +58,8 @@ export async function GET(request: Request) {
         checkedInAt: r.checked_in_at,
         attendedAt: r.attended_at,
         category: r.category,
+        isCore: r.is_core === true,
+        babyPhotoUrl: r.baby_photo_url ? (signed.get(r.baby_photo_url) ?? null) : null,
         hasGuardian: !!r.guardian_name,
       }
     })

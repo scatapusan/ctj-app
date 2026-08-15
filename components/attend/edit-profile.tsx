@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { createBrowserClient } from "@/lib/supabase"
 import { toast } from "@/lib/toast"
+import { uploadPhoto } from "@/components/retreat/upload-baby-photo"
 import { differenceInYears, parse } from "date-fns"
 import type { Member } from "@/lib/types"
 import { Input } from "@/components/ui/input"
@@ -169,28 +169,18 @@ export function EditProfile({ member, pin, onSaved, onCancel }: EditProfileProps
     setError(null)
 
     try {
-      const supabase = createBrowserClient()
-      let photoUrl: string | null = member.photo_url
+      // Baseline is the STORED path, never the signed display URL — saving the
+      // latter would put an expiring link in the database.
+      let photoUrl: string | null = member.photo_path ?? member.photo_url
 
-      // Upload new photo if changed
+      // Upload new photo if changed (server route — private bucket).
       if (photoChanged && photoFile) {
-        const ext = photoFile.name.split(".").pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-
-        const { error: uploadError } = await supabase.storage
-          .from("member-photos")
-          .upload(fileName, photoFile)
-
-        if (uploadError) {
-          console.error("Photo upload error:", uploadError)
+        try {
+          photoUrl = await uploadPhoto(photoFile, "profile")
+        } catch {
           toast.warning("Profile photo couldn't be uploaded", {
             description: "Your other changes were saved — try the photo again later.",
           })
-        } else {
-          const { data: urlData } = supabase.storage
-            .from("member-photos")
-            .getPublicUrl(fileName)
-          photoUrl = urlData.publicUrl
         }
       } else if (photoChanged && !photoFile) {
         // Photo was removed

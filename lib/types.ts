@@ -25,7 +25,14 @@ export interface Member {
   contact_number: string | null
   facebook_link: string | null
   address: string | null
+  /**
+   * From READ endpoints this is display-ready: a short-lived signed URL (or a
+   * legacy absolute URL for rows written before the private-bucket migration).
+   * Never send it back on save — use `photo_path`.
+   */
   photo_url: string | null
+  /** The raw stored object path, supplied by read endpoints for round-tripping. */
+  photo_path?: string | null
   discipler_name: string | null
   disciples: string | null
   prospect_disciples: string | null
@@ -74,6 +81,11 @@ export interface Attendance {
   attended_at: string | null
   /** Event-scoped retreat registration answers (null outside retreat flows). */
   category: RetreatCategory | null
+  /**
+   * Whether this person was a core leader AT REGISTRATION TIME. Core is a role,
+   * not an age bracket, so it lives alongside `category` rather than inside it.
+   */
+  is_core: boolean
   baby_photo_url: string | null
   guardian_name: string | null
   guardian_contact: string | null
@@ -90,4 +102,17 @@ export interface MemberSummary {
   last_name: string
   photo_url: string | null
   is_guest: boolean
+  /** Recognised core leader — drives the read-only badge on the retreat form. */
+  is_core?: boolean
+}
+
+/** Single display value the ministry asked for: Core / Youth / YA. */
+export function categoryLabel(
+  category: RetreatCategory | null | undefined,
+  isCore: boolean | null | undefined,
+): string {
+  if (isCore) return "Core"
+  if (category === "youth") return "Youth"
+  if (category === "ya") return "YA"
+  return ""
 }

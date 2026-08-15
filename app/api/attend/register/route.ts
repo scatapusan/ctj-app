@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { pushRegistrationToSheets } from "@/lib/attend-sheets"
+import { toStoredPhotoValue } from "@/lib/photos"
 import type { Member } from "@/lib/types"
 
 // Fields a PUBLIC registrant may set. Privilege flags (is_admin,
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
   for (const k of ALLOWED_FIELDS) {
     if (input[k] !== undefined && input[k] !== null) member[k] = input[k]
   }
+  if (member.photo_url) member.photo_url = toStoredPhotoValue(member.photo_url as string)
 
   const supabase = createRouteHandlerClient()
   const { data, error } = await supabase.rpc("register_and_checkin", {

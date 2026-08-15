@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
 import { syncMemberToSheet } from "@/lib/google-sheets"
 import { pushRegistrationToSheets, pushAttendanceToSheets } from "@/lib/attend-sheets"
+import { toStoredPhotoValue } from "@/lib/photos"
 import type { Member } from "@/lib/types"
 
 // Retreat registration. Default is PRE-registration (status='registered' —
@@ -57,7 +58,10 @@ function validateRetreat(input: Record<string, unknown>, birthdate: string): Ret
   const category = typeof input.category === "string" ? input.category : ""
   if (category !== "youth" && category !== "ya") return "Please choose your category."
 
-  const babyPhotoUrl = typeof input.baby_photo_url === "string" && input.baby_photo_url ? input.baby_photo_url : null
+  const babyPhotoUrl =
+    typeof input.baby_photo_url === "string" && input.baby_photo_url
+      ? toStoredPhotoValue(input.baby_photo_url)
+      : null
   if (category === "ya" && !babyPhotoUrl) {
     return "YA/Singles registration needs a baby or childhood photo."
   }
@@ -106,7 +110,7 @@ export async function POST(request: Request) {
 
     const { data: member } = await supabase
       .from("members")
-      .select("id, first_name, last_name, email")
+      .select("id, first_name, last_name, email, is_youth_ya_core")
       .eq("id", memberId)
       .maybeSingle()
     if (!member) return NextResponse.json({ error: "Member not found." }, { status: 404 })
@@ -116,6 +120,8 @@ export async function POST(request: Request) {
       event_id: eventId,
       status,
       attended_at: walkIn ? new Date().toISOString() : null,
+      // Snapshot the role as it stands right now — never taken from the client.
+      is_core: member.is_youth_ya_core === true,
       category: meta.category,
       baby_photo_url: meta.baby_photo_url,
       guardian_name: meta.guardian_name,

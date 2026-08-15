@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
+import { signPhoto } from "@/lib/photos"
 
 // Public member lookup by email. Returns ONLY minimal identity fields (never the
 // full PII record — that requires the PIN, see /api/attend/profile) and is
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
   const supabase = createRouteHandlerClient()
   const { data: member, error } = await supabase
     .from("members")
-    .select("id, first_name, last_name, photo_url, is_guest")
+    .select("id, first_name, last_name, photo_url, is_guest, is_youth_ya_core")
     .eq("email", email)
     .maybeSingle()
 
@@ -51,8 +52,12 @@ export async function POST(request: Request) {
       id: member.id,
       first_name: member.first_name,
       last_name: member.last_name,
-      photo_url: member.photo_url,
+      // Display-ready and short-lived; the bucket itself is private.
+      photo_url: await signPhoto(supabase, member.photo_url),
       is_guest: member.is_guest,
+      // Drives the read-only "Core" badge on the retreat form. Core status is
+      // never self-declared — it comes from the member record.
+      is_core: member.is_youth_ya_core === true,
     },
     alreadyCheckedIn,
   })

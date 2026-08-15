@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import type { Event } from "@/lib/types"
+import { categoryLabel, type Event } from "@/lib/types"
 import { toast } from "@/lib/toast"
 import { ListSkeleton } from "@/components/admin/list-skeleton"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Loader2, Search, UserPlus, CheckCircle2, Check } from "lucide-react"
+import { Loader2, Search, UserPlus, CheckCircle2, Check, X } from "lucide-react"
 import { format } from "date-fns"
 
 interface RosterRow {
@@ -20,6 +20,10 @@ interface RosterRow {
   checkedInAt: string
   attendedAt: string | null
   category: "youth" | "ya" | null
+  /** Snapshotted core-leader role, shown instead of the age bracket. */
+  isCore: boolean
+  /** Short-lived signed URL — the bucket is private. */
+  babyPhotoUrl: string | null
   hasGuardian: boolean
 }
 
@@ -31,6 +35,7 @@ export default function CheckinPage() {
   const [rosterLoading, setRosterLoading] = useState(false)
   const [query, setQuery] = useState("")
   const [marking, setMarking] = useState<string | null>(null)
+  const [lightbox, setLightbox] = useState<{ url: string; name: string } | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -197,6 +202,17 @@ export default function CheckinPage() {
                       key={row.attendanceId}
                       className="glass rounded-xl p-4 flex items-center justify-between gap-3"
                     >
+                      {row.babyPhotoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setLightbox({ url: row.babyPhotoUrl!, name: row.name })}
+                          className="shrink-0 rounded-lg overflow-hidden border-2 border-foreground hover:opacity-80 transition-opacity"
+                          aria-label={`View ${row.name}'s baby photo`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={row.babyPhotoUrl} alt="" className="w-12 h-12 object-cover" />
+                        </button>
+                      )}
                       <div className="min-w-0">
                         <p className="font-bold text-foreground truncate">
                           {row.name}
@@ -205,9 +221,9 @@ export default function CheckinPage() {
                           )}
                         </p>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
-                          {row.category && (
+                          {categoryLabel(row.category, row.isCore) && (
                             <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-secondary text-foreground ring-1 ring-border">
-                              {row.category === "youth" ? "Youth" : "YA"}
+                              {categoryLabel(row.category, row.isCore)}
                             </span>
                           )}
                           {row.hasGuardian && (
@@ -270,6 +286,32 @@ export default function CheckinPage() {
                   ))
                 )}
               </section>
+            </div>
+          )}
+
+          {/* Baby photo lightbox */}
+          {lightbox && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-foreground/50" onClick={() => setLightbox(null)} />
+              <div className="relative glass rounded-2xl p-4 max-w-sm w-full space-y-3">
+                <button
+                  onClick={() => setLightbox(null)}
+                  className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+                  aria-label="Close"
+                >
+                  <X className="size-5" />
+                </button>
+                <p className="text-sm font-extrabold text-foreground pr-8">{lightbox.name}</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={lightbox.url}
+                  alt={`${lightbox.name} as a child`}
+                  className="w-full rounded-xl border-2 border-foreground"
+                />
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Private photo — this link expires shortly and is not shareable.
+                </p>
+              </div>
             </div>
           )}
 

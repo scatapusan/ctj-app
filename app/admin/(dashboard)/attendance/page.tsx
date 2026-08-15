@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import type { Event } from "@/lib/types"
+import { categoryLabel, type Event } from "@/lib/types"
 import { DataTable } from "@/components/admin/data-table"
 import { ListSkeleton } from "@/components/admin/list-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -17,6 +17,8 @@ interface AttendanceRecord {
   checked_in_at: string
   status: "registered" | "attended"
   attended_at: string | null
+  category: "youth" | "ya" | null
+  is_core: boolean
 }
 
 function StatusBadge({ status }: { status: AttendanceRecord["status"] }) {
@@ -78,10 +80,10 @@ export default function AttendancePage() {
     if (!records.length || !selectedEventId) return
 
     const event = events.find((e) => e.id === selectedEventId)
-    const header = "Name,Email,Status,Registered At,Attended At"
+    const header = "Name,Email,Category,Status,Registered At,Attended At"
     const rows = records.map(
       (r) =>
-        `"${r.member_name}","${r.email}","${r.status}","${format(new Date(r.checked_in_at), "yyyy-MM-dd HH:mm:ss")}","${r.attended_at ? format(new Date(r.attended_at), "yyyy-MM-dd HH:mm:ss") : ""}"`
+        `"${r.member_name}","${r.email}","${categoryLabel(r.category, r.is_core)}","${r.status}","${format(new Date(r.checked_in_at), "yyyy-MM-dd HH:mm:ss")}","${r.attended_at ? format(new Date(r.attended_at), "yyyy-MM-dd HH:mm:ss") : ""}"`
     )
     const csv = [header, ...rows].join("\n")
 
@@ -186,6 +188,22 @@ export default function AttendancePage() {
                 { key: "member_name", label: "Name", sortable: true },
                 { key: "email", label: "Email", sortable: true },
                 {
+                  key: "category",
+                  label: "Category",
+                  sortable: true,
+                  render: (item) => {
+                    const r = item as unknown as AttendanceRecord
+                    const label = categoryLabel(r.category, r.is_core)
+                    return label ? (
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-secondary text-foreground ring-1 ring-border">
+                        {label}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )
+                  },
+                },
+                {
                   key: "status",
                   label: "Status",
                   sortable: true,
@@ -219,6 +237,11 @@ export default function AttendancePage() {
                       <p className="text-xs text-muted-foreground truncate">{r.email}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
+                      {categoryLabel(r.category, r.is_core) && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-secondary text-foreground ring-1 ring-border">
+                          {categoryLabel(r.category, r.is_core)}
+                        </span>
+                      )}
                       <StatusBadge status={r.status} />
                       <span className="text-xs text-accent/80 font-medium">
                         {format(new Date(r.checked_in_at), "h:mm a")}

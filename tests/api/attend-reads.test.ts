@@ -63,10 +63,27 @@ describe("POST /api/attend/lookup", () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json.found).toBe(true)
-    expect(json.member).toEqual(summary)
+    // is_core drives the read-only Core badge on the retreat form.
+    expect(json.member).toEqual({ ...summary, is_core: false })
     expect(json.alreadyCheckedIn).toBe(false)
     // Must NOT leak PII columns.
-    expect(Object.keys(json.member).sort()).toEqual(["first_name", "id", "is_guest", "last_name", "photo_url"])
+    expect(Object.keys(json.member).sort()).toEqual([
+      "first_name", "id", "is_core", "is_guest", "last_name", "photo_url",
+    ])
+  })
+
+  it("reports is_core=true for a recognised core leader", async () => {
+    use({
+      maybeSingle: {
+        members: { data: { ...summary, is_youth_ya_core: true } },
+        attendance: { data: null },
+      },
+    })
+    const res = await lookupPOST(req({ email: "core@x.test", eventId: "e1" }))
+    const json = await res.json()
+    expect(json.member.is_core).toBe(true)
+    // The raw column name is never echoed to the client.
+    expect(json.member.is_youth_ya_core).toBeUndefined()
   })
 
   it("flags alreadyCheckedIn when an attendance row exists", async () => {
@@ -104,7 +121,9 @@ describe("POST /api/attend/profile (fetch behind PIN)", () => {
     use({ rpc: { data: true, error: null }, maybeSingle: { members: { data: full } } })
     const res = await profileGET(req({ memberId: "m1", pin: "1234" }))
     expect(res.status).toBe(200)
-    expect((await res.json()).member).toEqual(full)
+    // Every stored field is returned, plus the photo pair the private-bucket
+    // change adds: photo_url is display-ready, photo_path is what saves send back.
+    expect((await res.json()).member).toEqual({ ...full, photo_url: null, photo_path: null })
   })
 
   it("returns 401 for a wrong PIN", async () => {
