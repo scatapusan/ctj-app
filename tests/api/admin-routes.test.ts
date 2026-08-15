@@ -10,6 +10,7 @@ import { GET as membersGET } from "@/app/api/admin/members/route"
 import { GET as memberGET, PATCH as memberPATCH, DELETE as memberDELETE } from "@/app/api/admin/members/[id]/route"
 import { POST as eventCreate } from "@/app/api/admin/events/route"
 import { PATCH as eventPATCH, DELETE as eventDELETE } from "@/app/api/admin/events/[id]/route"
+import { PATCH as attendancePATCH } from "@/app/api/admin/attendance/route"
 
 const ADMIN = { memberId: "x", email: "a@ctj.test", role: "admin" as const, iat: 0 }
 const CORE = { memberId: "y", email: "c@ctj.test", role: "core" as const, iat: 0 }
@@ -99,6 +100,51 @@ describe("member mutations — per-action role rules", () => {
 describe("member delete — admin only", () => {
   it("FORBIDDEN for core", async () => { as(CORE); expect((await memberDELETE(req(), params("m1"))).status).toBe(403) })
   it("allowed for admin", async () => { as(ADMIN); expect((await memberDELETE(req(), params("m1"))).status).toBe(200) })
+})
+
+describe("attendance category correction — admin OR core", () => {
+  const patch = (body?: unknown) =>
+    new Request("http://localhost/api/admin/attendance", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+
+  it("403 without session", async () => {
+    as(null)
+    expect((await attendancePATCH(patch({ id: "a1", category: "core" }))).status).toBe(403)
+  })
+  it("allowed for core (registration label, not a privilege change)", async () => {
+    as(CORE)
+    expect((await attendancePATCH(patch({ id: "a1", category: "core" }))).status).toBe(200)
+  })
+  it("allowed for admin, for each valid label", async () => {
+    as(ADMIN)
+    for (const category of ["youth", "ya", "core"]) {
+      expect((await attendancePATCH(patch({ id: "a1", category }))).status).toBe(200)
+    }
+  })
+  it("400 for a missing id or an invalid label", async () => {
+    as(ADMIN)
+    expect((await attendancePATCH(patch({ category: "core" }))).status).toBe(400)
+    expect((await attendancePATCH(patch({ id: "a1", category: "elder" }))).status).toBe(400)
+    expect((await attendancePATCH(patch({ id: "a1", category: "" }))).status).toBe(400)
+  })
+  it("maps labels correctly: core keeps the stored bracket, youth/ya clear the core flag", async () => {
+    const updates: Record<string, unknown>[] = []
+    const qb: Record<string, unknown> = {}
+    Object.assign(qb, {
+      update: (p: Record<string, unknown>) => { updates.push(p); return qb },
+      eq: () => qb,
+      select: () => qb,
+      maybeSingle: async () => ({ data: { id: "a1" }, error: null }),
+    })
+    vi.mocked(createRouteHandlerClient).mockReturnValue({ from: () => qb } as never)
+    as(ADMIN)
+    await attendancePATCH(patch({ id: "a1", category: "core" }))
+    await attendancePATCH(patch({ id: "a1", category: "youth" }))
+    expect(updates).toEqual([{ is_core: true }, { category: "youth", is_core: false }])
+  })
 })
 
 describe("event writes — admin only", () => {

@@ -17,8 +17,13 @@ import type { Member } from "@/lib/types"
 //
 // `retreat` carries the event-scoped answers; validation rules:
 //   * birthdate is REQUIRED for new people (category depends on it)
-//   * category must be 'youth' or 'ya'
-//   * category 'ya'  -> baby_photo_url REQUIRED
+//   * category must be 'youth' or 'ya' (the age bracket — 'core' is NOT a
+//     category; it's the separate is_core flag below)
+//   * is_core: self-declared registration label, stored on the ATTENDANCE row
+//     only. It is prefilled client-side from the roster but the registrant's
+//     choice wins (the roster is stale); admins correct mistakes in the
+//     console. It NEVER writes members.is_youth_ya_core or any privilege.
+//   * category 'ya' (and not core) -> baby_photo_url REQUIRED
 //   * age under 18   -> guardian name + contact REQUIRED
 
 // Fields a PUBLIC registrant may set (subset of the main registration form —
@@ -43,6 +48,8 @@ function ageOn(dateStr: string, on: Date): number | null {
 
 interface RetreatMeta {
   category: string
+  /** Self-declared Core label — attendance-row data, never a member privilege. */
+  is_core: boolean
   baby_photo_url: string | null
   guardian_name: string | null
   guardian_contact: string | null
@@ -55,14 +62,20 @@ function validateRetreat(input: Record<string, unknown>, birthdate: string): Ret
   if (age < 12) return "The retreat is for ages 12 and up — please ask a leader to help you register."
   if (age > 100) return "Please enter a valid birthday."
 
+  // The age bracket. 'core' is deliberately NOT accepted here — Core rides on
+  // the is_core flag so the bracket dimension is never lost.
   const category = typeof input.category === "string" ? input.category : ""
   if (category !== "youth" && category !== "ya") return "Please choose your category."
+
+  const isCore = input.is_core === true
 
   const babyPhotoUrl =
     typeof input.baby_photo_url === "string" && input.baby_photo_url
       ? toStoredPhotoValue(input.baby_photo_url)
       : null
-  if (category === "ya" && !babyPhotoUrl) {
+  // The baby photo is for the YA game; people registering as Core skip it
+  // (the form never shows them the picker).
+  if (category === "ya" && !isCore && !babyPhotoUrl) {
     return "YA/Singles registration needs a baby or childhood photo."
   }
 
@@ -74,6 +87,7 @@ function validateRetreat(input: Record<string, unknown>, birthdate: string): Ret
 
   return {
     category,
+    is_core: isCore,
     baby_photo_url: babyPhotoUrl,
     guardian_name: guardianName || null,
     guardian_contact: guardianContact || null,
@@ -110,7 +124,7 @@ export async function POST(request: Request) {
 
     const { data: member } = await supabase
       .from("members")
-      .select("id, first_name, last_name, email, is_youth_ya_core")
+      .select("id, first_name, last_name, email")
       .eq("id", memberId)
       .maybeSingle()
     if (!member) return NextResponse.json({ error: "Member not found." }, { status: 404 })
@@ -120,8 +134,10 @@ export async function POST(request: Request) {
       event_id: eventId,
       status,
       attended_at: walkIn ? new Date().toISOString() : null,
-      // Snapshot the role as it stands right now — never taken from the client.
-      is_core: member.is_youth_ya_core === true,
+      // What they chose on the form (roster only prefills client-side — it is
+      // stale and under-reports). Attendance-row label ONLY: nothing here ever
+      // writes members.is_youth_ya_core / is_admin.
+      is_core: meta.is_core,
       category: meta.category,
       baby_photo_url: meta.baby_photo_url,
       guardian_name: meta.guardian_name,
@@ -183,6 +199,19 @@ export async function POST(request: Request) {
   }
 
   const created = (Array.isArray(data) ? data[0] : data) as Member
+
+  if (meta.is_core) {
+    // Backstop for the RPC-migration window: the pre-migration
+    // register_and_checkin ignores p_retreat.is_core, so set the flag on the
+    // attendance row it just created. Once the widened RPC is live this is a
+    // no-op write (the row is already true). Attendance only — never members.
+    const { error: coreError } = await supabase
+      .from("attendance")
+      .update({ is_core: true })
+      .eq("member_id", created.id)
+      .eq("event_id", eventId)
+    if (coreError) console.error("retreat core label backstop error:", coreError)
+  }
 
   if (walkIn) {
     // Walk-ins attended for real: member + attendance lines (never throws).

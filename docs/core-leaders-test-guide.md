@@ -11,9 +11,12 @@ catch anything broken before the QR goes out to everyone.
       the QR modal builds it from the site you're actually on.
 - [ ] Open that link yourself once. You should see the retreat event banner, not
       "Hmm, that link doesn't look right."
-- [ ] Check the core flags are right *before* anyone registers. `attendance.is_core`
-      is snapshotted at registration and does not update later — see
-      "Why the flags matter first" below.
+- [ ] Core is now **self-selected** on the form (Youth / YA / Core). The
+      member's `is_youth_ya_core` flag only pre-selects Core for recognised
+      leaders — registrants can change it, and what they pick is what's stored.
+      Wrong picks are fixed in **Admin → Attendance** (Category dropdown per
+      row), so the stale roster no longer blocks anyone — see "How Core works
+      now" below.
 - [ ] Make sure every leader who will mark attendance on Aug 30 already has a
       core-role login: **Admin → Members → Invite**. New logins start with PIN
       **1234** — have them change it.
@@ -33,10 +36,12 @@ if that isn't how you normally address the group.
 >    greet you by name ("Hi, <your name>!") and only ask the retreat questions
 >    (birthday, category). If it makes you fill in a whole new form, your email
 >    doesn't match your member record — tell me which one you used.
-> 2. If you're 23 or older the form should preselect **YA / Singles**, which
->    requires a baby/childhood photo. Try the upload on mobile data, not just
->    WiFi. Photos must be under 5MB; if it fails you should see "Your photo
->    couldn't be uploaded."
+> 2. Pick **Core** as your category (it may already be pre-selected for you).
+>    If you want to test the photo upload too, pick **YA / Singles** instead —
+>    that one requires a baby/childhood photo. Try the upload on mobile data,
+>    not just WiFi. Photos must be under 5MB; if it fails you should see "Your
+>    photo couldn't be uploaded." (You can't change your own registration
+>    afterwards — tell me which one you picked and I'll correct it if needed.)
 > 3. Does everything look right on YOUR phone? Screenshot anything weird.
 > 4. After submitting you should see **"You're pre-registered!"** — if you see
 >    an error instead, screenshot it and send it here.
@@ -45,26 +50,30 @@ if that isn't how you normally address the group.
 >
 > Report anything weird here. Salamat! 🙏
 
-## Why the flags matter first
+## How Core works now
 
-Core leaders see a **"You're registered as Core"** line on the retreat form, so
-this test run doubles as a check on the core flags: if a leader tells you they
-*didn't* see it, their `is_youth_ya_core` flag is wrong.
+Core is one of the three category options on the form (Youth / YA / Core), and
+the registrant's own pick is what gets stored on their registration. A leader
+whose `is_youth_ya_core` flag is set sees Core **pre-selected** with a "We've
+pre-selected Core for you" line — that's just a prefill, not a lock.
 
-Fix it before they register if you can. `attendance.is_core` is a snapshot taken
-at insert time, so correcting a member's flag afterwards does **not** update a
-registration that already exists — that needs a follow-up UPDATE against the
-attendance row.
+This is a registration label, not an account role: picking Core does **not**
+give anyone a login, admin access, or the member-record core flag. If someone
+picks the wrong category, fix it in **Admin → Attendance** — every row has a
+Category dropdown (Youth / YA / Core). Picking Core there keeps their age
+bracket; picking Youth or YA clears the Core label.
 
 ## What the leaders' registrations verify
 
 | Leader action | What it proves |
 |---|---|
 | Known email → short form | Existing-member path, no duplicate errors |
-| Leader picks YA / Singles (auto-selected for 23+) | Required upload works on real phones/networks |
+| Leader picks Core | Self-selection stores Core on the registration |
+| Flagged leader sees Core pre-selected | `is_youth_ya_core` prefill works |
+| Leader picks YA / Singles | Required upload works on real phones/networks |
 | Registering twice | Friendly already-registered screen |
 | Various phones | New UI on real devices, weak-signal upload behavior |
-| Core leader sees the "Core" line | `is_youth_ya_core` is set correctly for them |
+| You change a category in Admin → Attendance | The correction path works |
 
 ## For you (admin) during the test
 

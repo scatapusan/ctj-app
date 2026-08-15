@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Download, Calendar, Users, ClipboardList } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
+import { toast } from "sonner"
 
 interface AttendanceRecord {
   id: string
@@ -19,6 +20,35 @@ interface AttendanceRecord {
   attended_at: string | null
   category: "youth" | "ya" | null
   is_core: boolean
+}
+
+/**
+ * Inline Category corrector: Core is self-selected on the retreat form now, so
+ * the admin console is where mistakes get fixed. Picking Core keeps the stored
+ * age bracket; picking Youth/YA clears the Core label.
+ */
+function CategorySelect({
+  record,
+  onChange,
+}: {
+  record: AttendanceRecord
+  onChange: (id: string, value: "youth" | "ya" | "core") => void
+}) {
+  const value = record.is_core ? "core" : (record.category ?? "")
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(record.id, e.target.value as "youth" | "ya" | "core")}
+      onClick={(e) => e.stopPropagation()}
+      aria-label={`Category for ${record.member_name}`}
+      className="text-xs font-bold rounded-full bg-secondary text-foreground ring-1 ring-border px-2 py-1 cursor-pointer hover:ring-foreground focus:outline-none focus:ring-foreground"
+    >
+      {value === "" && <option value="">—</option>}
+      <option value="youth">Youth</option>
+      <option value="ya">YA</option>
+      <option value="core">Core</option>
+    </select>
+  )
 }
 
 function StatusBadge({ status }: { status: AttendanceRecord["status"] }) {
@@ -73,6 +103,28 @@ export default function AttendancePage() {
       setRecords([])
     } finally {
       setRecordsLoading(false)
+    }
+  }
+
+  async function changeCategory(id: string, value: "youth" | "ya" | "core") {
+    const previous = records
+    // Optimistic: Core keeps the stored bracket, Youth/YA clears the label.
+    setRecords((rs) =>
+      rs.map((r) =>
+        r.id !== id ? r : value === "core" ? { ...r, is_core: true } : { ...r, category: value, is_core: false },
+      ),
+    )
+    try {
+      const res = await fetch("/api/admin/attendance", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, category: value }),
+      })
+      if (!res.ok) throw new Error()
+      toast.success("Category updated")
+    } catch {
+      setRecords(previous)
+      toast.error("Couldn't update the category. Please try again.")
     }
   }
 
@@ -191,17 +243,12 @@ export default function AttendancePage() {
                   key: "category",
                   label: "Category",
                   sortable: true,
-                  render: (item) => {
-                    const r = item as unknown as AttendanceRecord
-                    const label = categoryLabel(r.category, r.is_core)
-                    return label ? (
-                      <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-secondary text-foreground ring-1 ring-border">
-                        {label}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )
-                  },
+                  render: (item) => (
+                    <CategorySelect
+                      record={item as unknown as AttendanceRecord}
+                      onChange={changeCategory}
+                    />
+                  ),
                 },
                 {
                   key: "status",
@@ -237,11 +284,7 @@ export default function AttendancePage() {
                       <p className="text-xs text-muted-foreground truncate">{r.email}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      {categoryLabel(r.category, r.is_core) && (
-                        <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-secondary text-foreground ring-1 ring-border">
-                          {categoryLabel(r.category, r.is_core)}
-                        </span>
-                      )}
+                      <CategorySelect record={r} onChange={changeCategory} />
                       <StatusBadge status={r.status} />
                       <span className="text-xs text-accent/80 font-medium">
                         {format(new Date(r.checked_in_at), "h:mm a")}

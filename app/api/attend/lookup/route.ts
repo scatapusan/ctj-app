@@ -55,8 +55,8 @@ export async function POST(request: Request) {
       // Display-ready and short-lived; the bucket itself is private.
       photo_url: await signPhoto(supabase, member.photo_url),
       is_guest: member.is_guest,
-      // Drives the read-only "Core" badge on the retreat form. Core status is
-      // never self-declared — it comes from the member record.
+      // Prefills the Core option on the retreat form. Just a prefill — the
+      // registrant's own choice is what gets stored on the attendance row.
       is_core: member.is_youth_ya_core === true,
     },
     alreadyCheckedIn,
