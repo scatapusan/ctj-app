@@ -34,3 +34,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# claude code — local machine settings, may contain credentials in allowlisted commands
+.claude/settings.local.json
+.claude/worktrees/
