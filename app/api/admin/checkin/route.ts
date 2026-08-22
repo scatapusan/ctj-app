@@ -6,13 +6,28 @@ import { signPhotos, babyPhotoObjectPath } from "@/lib/photos"
 
 // Staff day-of check-in (admin or core).
 //
-// GET  ?eventId=...          -> full roster for the event: pre-registered AND
-//                               attended rows, with member names for search.
-// POST { attendanceId }      -> mark a pre-registered row attended: flips
-//                               status and stamps attended_at. Idempotent —
-//                               marking an already-attended row is a no-op
-//                               success. Touches ONLY that row, and only the
-//                               status/attended_at columns.
+// GET    ?eventId=...          -> full roster for the event: pre-registered AND
+//                                 attended rows, with member names for search.
+// POST   { attendanceId }      -> mark a pre-registered row attended: flips
+//                                 status and stamps attended_at. Idempotent —
+//                                 marking an already-attended row is a no-op
+//                                 success. Touches ONLY that row, and only the
+//                                 status/attended_at columns.
+// DELETE ?attendanceId=...     -> the reverse: put an attended row back to
+//                                 pre-registered. Also idempotent, also touches
+//                                 only those two columns.
+//
+// Marking used to be one-way, which made a mis-tap at the door permanent —
+// the roster reflows the moment a row is marked, so the next name slides up
+// under the finger. The reverse is deliberately the SAME role as marking
+// (admin or core): the person who needs to fix a mis-tap is the leader who
+// made it, mid-queue, and sending them to find an admin is how a wrong record
+// becomes a permanent one.
+//
+// What this does NOT undo: marking attended appends a line to the Google
+// Sheets Attendance tab (below), and the Sheets integration has no per-row
+// delete. That line survives until someone runs the full sync from the
+// dashboard, which clears and rewrites the tab from the database.
 
 export async function GET(request: Request) {
   const guard = requireRole("admin", "core")
@@ -73,6 +88,53 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({ roster })
+}
+
+export async function DELETE(request: Request) {
+  const guard = requireRole("admin", "core")
+  if (!guard.ok) return guard.response
+
+  const attendanceId = new URL(request.url).searchParams.get("attendanceId") ?? ""
+  if (!attendanceId) return NextResponse.json({ error: "Missing attendance id." }, { status: 400 })
+
+  const supabase = createRouteHandlerClient()
+
+  const { data: row, error: readErr } = await supabase
+    .from("attendance")
+    .select("id, status")
+    .eq("id", attendanceId)
+    .maybeSingle()
+
+  if (readErr) {
+    console.error("un-attend read error:", readErr)
+    return NextResponse.json({ error: "Failed to update. Please try again." }, { status: 500 })
+  }
+  if (!row) return NextResponse.json({ error: "Record not found." }, { status: 404 })
+
+  // Idempotent, mirroring POST: already pre-registered is success, nothing written.
+  if (row.status !== "attended") {
+    return NextResponse.json({ ok: true, alreadyRegistered: true })
+  }
+
+  // attended_at is NOT set here. The attendance_sync_attended_at trigger
+  // (20260808060000_retreat_event_mode.sql) nulls it whenever status becomes
+  // 'registered', so the invariant holds even if this route is bypassed.
+  const { error: updErr } = await supabase
+    .from("attendance")
+    .update({ status: "registered", attended_at: null })
+    .eq("id", attendanceId)
+    .eq("status", "attended")
+
+  if (updErr) {
+    console.error("un-attend update error:", updErr)
+    return NextResponse.json({ error: "Failed to update. Please try again." }, { status: 500 })
+  }
+
+  // The registration itself is untouched: the person stays on the event's list,
+  // keeps their category, guardian details and baby photo, and can be marked
+  // attended again. Removing someone from the event entirely is a different,
+  // admin-only action on /api/admin/attendance.
+  return NextResponse.json({ ok: true })
 }
 
 export async function POST(request: Request) {

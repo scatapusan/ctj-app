@@ -8,7 +8,7 @@ import { ListSkeleton } from "@/components/admin/list-skeleton"
 import { useConfirm } from "@/components/admin/confirm-dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Loader2, Search, UserPlus, CheckCircle2, Check, X } from "lucide-react"
+import { Loader2, Search, UserPlus, CheckCircle2, Check, X, Undo2 } from "lucide-react"
 import { format } from "date-fns"
 
 interface RosterRow {
@@ -79,24 +79,14 @@ export default function CheckinPage() {
   /**
    * Mark one pre-registered person attended.
    *
-   * This confirms, and the reason is the list itself: a marked row leaves the
-   * pre-registered section immediately, so the next name slides up into the
-   * position the finger just touched. Marking is one-way — there is no
-   * un-attend anywhere in the app — so the wrong name marked here cannot be
-   * put back from any screen.
-   *
-   * The dialog names the person, which is the question actually being asked at
-   * a door queue: did I tap the right row?
+   * Deliberately NOT confirmed. This is the door-queue action — around 44 of
+   * them in a row with people waiting — and a dialog on each would double the
+   * taps while training leaders to dismiss it unread by the fifth person. The
+   * safety net is Undo instead: the success toast carries one for the mis-tap
+   * you notice immediately, and every attended row keeps an Undo control for
+   * the one you notice later.
    */
   async function markAttended(row: RosterRow) {
-    const ok = await confirm({
-      title: `Mark ${row.name} attended?`,
-      body: "Marking is one-way — there is no un-attend button, so this cannot be corrected from the admin console.",
-      confirmLabel: "Mark attended",
-      tone: "default",
-    })
-    if (!ok) return
-
     setMarking(row.attendanceId)
     try {
       const res = await fetch("/api/admin/checkin", {
@@ -116,7 +106,56 @@ export default function CheckinPage() {
             : r,
         ),
       )
-      toast.success(`${row.name} marked attended`)
+      // Undo, right where the mistake happens. Not confirmed: it reverses the
+      // action just taken rather than changing something from earlier, and the
+      // worst case is re-tapping Mark attended.
+      toast.success(`${row.name} marked attended`, {
+        action: { label: "Undo", onClick: () => unmarkAttended(row, { ask: false }) },
+      })
+    } catch {
+      toast.error("Network error. Please try again.")
+    } finally {
+      setMarking(null)
+    }
+  }
+
+  /**
+   * Put an attended row back to pre-registered.
+   *
+   * `ask` is false for the Undo on the success toast — reversing what you just
+   * did needs no ceremony — and true for the control on an attended row, where
+   * this is a deliberate change to a record from earlier in the day.
+   */
+  async function unmarkAttended(row: RosterRow, { ask }: { ask: boolean }) {
+    if (ask) {
+      const ok = await confirm({
+        title: `Undo attendance for ${row.name}?`,
+        body: "They go back to the pre-registered list and can be marked attended again. Their registration, category and photo are untouched. A line already written to the Google Sheet stays there until the next full sync.",
+        confirmLabel: "Undo attendance",
+        tone: "default",
+      })
+      if (!ok) return
+    }
+
+    setMarking(row.attendanceId)
+    try {
+      const res = await fetch(
+        `/api/admin/checkin?attendanceId=${encodeURIComponent(row.attendanceId)}`,
+        { method: "DELETE" },
+      )
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.error || "Failed to undo attendance.")
+        return
+      }
+      setRoster((prev) =>
+        prev.map((r) =>
+          r.attendanceId === row.attendanceId
+            ? { ...r, status: "registered", attendedAt: null }
+            : r,
+        ),
+      )
+      toast.success(`${row.name} moved back to pre-registered`)
     } catch {
       toast.error("Network error. Please try again.")
     } finally {
@@ -301,9 +340,30 @@ export default function CheckinPage() {
                             : "Attended"}
                         </p>
                       </div>
-                      <span className="shrink-0 w-8 h-8 rounded-full bg-primary border-2 border-foreground flex items-center justify-center">
-                        <CheckCircle2 className="size-4 text-foreground" />
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {/* The durable correction path: the toast Undo is gone
+                            within seconds, but a mis-tap is often noticed much
+                            later, when the person is standing in front of you. */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="min-h-[44px] text-xs"
+                          onClick={() => unmarkAttended(row, { ask: true })}
+                          disabled={marking === row.attendanceId}
+                        >
+                          {marking === row.attendanceId ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Undo2 className="size-4 mr-1.5" />
+                              Undo
+                            </>
+                          )}
+                        </Button>
+                        <span className="w-8 h-8 rounded-full bg-primary border-2 border-foreground flex items-center justify-center">
+                          <CheckCircle2 className="size-4 text-foreground" />
+                        </span>
+                      </div>
                     </div>
                   ))
                 )}
@@ -341,9 +401,10 @@ export default function CheckinPage() {
 
           {selectedEvent && (
             <p className="text-xs font-medium text-muted-foreground">
-              Marking is one-way here — if something was marked by mistake, fix it
-              from the database or ask the developer. Records made earlier are
-              never modified by marking someone else.
+              Marked someone by mistake? Tap <strong>Undo</strong> on their row
+              under Attended — they go straight back to the pre-registered list,
+              with their registration, category and photo untouched. Records made
+              earlier are never modified by marking someone else.
             </p>
           )}
         </>

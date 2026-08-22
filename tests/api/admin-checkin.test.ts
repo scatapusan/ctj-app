@@ -11,7 +11,11 @@ vi.mock("@/lib/attend-sheets", () => ({
 import { readSession } from "@/lib/admin-session"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { pushAttendanceToSheets } from "@/lib/attend-sheets"
-import { GET as rosterGET, POST as markPOST } from "@/app/api/admin/checkin/route"
+import {
+  GET as rosterGET,
+  POST as markPOST,
+  DELETE as unmarkDELETE,
+} from "@/app/api/admin/checkin/route"
 
 const ADMIN = { memberId: "x", email: "a@ctj.test", role: "admin" as const, iat: 0 }
 const CORE = { memberId: "y", email: "c@ctj.test", role: "core" as const, iat: 0 }
@@ -134,6 +138,100 @@ describe("GET /api/admin/checkin", () => {
     use({})
     const res = await rosterGET(new Request("http://localhost/api/admin/checkin"))
     expect(res.status).toBe(400)
+  })
+})
+
+describe("DELETE /api/admin/checkin (undo an attendance mark)", () => {
+  const unmarkReq = (id: string) =>
+    new Request(`http://localhost/api/admin/checkin?attendanceId=${id}`, { method: "DELETE" })
+
+  const attended = { id: "a1", member_id: "m1", event_id: "e1", status: "attended" }
+
+  it("403s without a session", async () => {
+    vi.mocked(readSession).mockReturnValue(null)
+    use({ attendanceRow: attended })
+    expect((await unmarkDELETE(unmarkReq("a1"))).status).toBe(403)
+  })
+
+  // The same role as marking, deliberately: the person who needs to fix a
+  // mis-tap is the core leader who made it, mid-queue at the door.
+  it("is allowed for core as well as admin", async () => {
+    for (const session of [ADMIN, CORE]) {
+      vi.mocked(readSession).mockReturnValue(session)
+      use({ attendanceRow: attended })
+      expect((await unmarkDELETE(unmarkReq("a1"))).status).toBe(200)
+    }
+  })
+
+  it("400s without an attendance id", async () => {
+    vi.mocked(readSession).mockReturnValue(CORE)
+    use({ attendanceRow: attended })
+    const res = await unmarkDELETE(
+      new Request("http://localhost/api/admin/checkin", { method: "DELETE" }),
+    )
+    expect(res.status).toBe(400)
+  })
+
+  it("404s for a record that is gone", async () => {
+    vi.mocked(readSession).mockReturnValue(CORE)
+    use({ attendanceRow: null })
+    expect((await unmarkDELETE(unmarkReq("nope"))).status).toBe(404)
+  })
+
+  it("writes ONLY status and attended_at, on that one row", async () => {
+    let payload: Record<string, unknown> | undefined
+    let filters: Record<string, string> | undefined
+    vi.mocked(readSession).mockReturnValue(CORE)
+    use({
+      attendanceRow: attended,
+      onUpdate: (p, f) => {
+        payload = p
+        filters = f
+      },
+    })
+
+    const res = await unmarkDELETE(unmarkReq("a1"))
+    expect(res.status).toBe(200)
+    expect(payload).toEqual({ status: "registered", attended_at: null })
+    // Scoped to the row AND to its current state, so two leaders undoing at
+    // once cannot double-apply.
+    expect(filters?.id).toBe("a1")
+    expect(filters?.status).toBe("attended")
+  })
+
+  it("is idempotent — undoing an already pre-registered row writes nothing", async () => {
+    let wrote = false
+    vi.mocked(readSession).mockReturnValue(CORE)
+    use({
+      attendanceRow: { ...attended, status: "registered" },
+      onUpdate: () => {
+        wrote = true
+      },
+    })
+
+    const res = await unmarkDELETE(unmarkReq("a1"))
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true, alreadyRegistered: true })
+    expect(wrote).toBe(false)
+  })
+
+  it("never touches the registration itself", async () => {
+    // No cascade, no photo removal, no member write — undoing attendance is a
+    // status correction, not a cancellation.
+    let payload: Record<string, unknown> | undefined
+    vi.mocked(readSession).mockReturnValue(CORE)
+    use({ attendanceRow: attended, onUpdate: (p) => { payload = p } })
+    await unmarkDELETE(unmarkReq("a1"))
+
+    for (const untouched of ["category", "is_core", "baby_photo_url", "guardian_name", "member_id", "event_id"]) {
+      expect(payload).not.toHaveProperty(untouched)
+    }
+  })
+
+  it("500s rather than reporting success when the write fails", async () => {
+    vi.mocked(readSession).mockReturnValue(CORE)
+    use({ attendanceRow: attended, updateError: { message: "boom" } })
+    expect((await unmarkDELETE(unmarkReq("a1"))).status).toBe(500)
   })
 })
 
