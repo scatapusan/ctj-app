@@ -110,8 +110,27 @@ bracket; picking Youth or YA clears the Core label.
    attended** afterwards. Only the admin walk-in button marks attendance in one
    step.
 4. Marking attended is one-way — there is still no "unmark" button, so tap
-   carefully. What you *can* do from **Admin → Attendance** is cancel the
-   registration outright (trash icon, admin only, asks you to confirm). That
-   removes them from this event entirely — their member profile is kept and
-   they can register again — so use it for "they're not coming", not to undo a
-   mis-tap on someone who is standing in front of you.
+   carefully. Cancelling a registration outright is possible from
+   **Admin → Attendance** (trash icon, asks you to confirm), but it is an
+   admin-only control and core leaders will not see the icon at all — ask an
+   admin. It removes someone from this event entirely — their member profile
+   is kept and they can register again — so it is for "they're not coming",
+   not for undoing a mis-tap on someone standing in front of you.
+5. Need someone's guardian number, address, birthday or baby photo? From
+   **Admin → Attendance**, pick the retreat and tap the eye icon on their row
+   (or just tap the row). That opens their full registration — everything they
+   filled in, photo included. Core leaders and admins see exactly the same
+   thing. It is real personal data about minors, so read it and close it;
+   please don't screenshot or forward it.
+6. For the guess-the-baby game: **Admin → Attendance** → pick the retreat →
+   **Baby photos (N)**. That downloads a zip of every baby photo for that
+   event, and each file inside is named after the person in it
+   ("Juan Dela Cruz.jpg") rather than a storage filename. Only registrants who
+   uploaded one are in it, so N will be smaller than the total registered.
+
+   Two things to expect. It can be a big download — start it on WiFi, before
+   the day, not at the venue. And if any photo came from an iPhone it will be a
+   `.heic` file: Windows needs the free *HEIF Image Extensions* from the
+   Microsoft Store to open those, while Macs and phones open them as they are.
+   The zip tells you which ones in a `_read-me.txt`, and that file also lists
+   anyone whose photo could not be included.

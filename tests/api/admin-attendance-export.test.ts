@@ -210,7 +210,7 @@ describe("GET /api/admin/attendance/export — every submitted field", () => {
     expect(c[8]).toBe("09171234567") // Contact Number
   })
 
-  it("carries the guardian details that no admin screen currently shows", async () => {
+  it("carries the guardian details, matching what the detail panel shows", async () => {
     use({ attendanceRows: [MINOR_ATTENDANCE], memberRows: [MINOR_MEMBER] })
     const c = cells((await csvLines(await get()))[1])
     expect(c[9]).toBe("Maria Dela Cruz")
@@ -255,6 +255,22 @@ describe("GET /api/admin/attendance/export — every submitted field", () => {
     const c = cells((await csvLines(res))[1])
     expect(c[11]).toBe("baby-123.jpeg")
     expect(c[12]).toBe("")
+  })
+
+  // baby_photo_url comes from a PUBLIC form. The File column still shows what
+  // is stored (so a bad value is visible to whoever is fixing it), but the Link
+  // column never turns it into something a leader can click.
+  it("emits no link for a photo value that is not one of our stored objects", async () => {
+    let asked: string[] = []
+    use({
+      attendanceRows: [{ ...MINOR_ATTENDANCE, baby_photo_url: "https://tracker.test/pixel.gif" }],
+      memberRows: [MINOR_MEMBER],
+      onSign: (paths) => { asked = paths },
+    })
+    const c = cells((await csvLines(await get()))[1])
+    expect(c[11]).toBe("https://tracker.test/pixel.gif") // Baby Photo File
+    expect(c[12]).toBe("") // Baby Photo Link
+    expect(asked).toEqual([])
   })
 
   it("exports a registrant with no photo without inventing a link", async () => {

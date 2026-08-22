@@ -3,7 +3,7 @@ import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
 import { syncMemberToSheet } from "@/lib/google-sheets"
 import { pushRegistrationToSheets, pushAttendanceToSheets } from "@/lib/attend-sheets"
-import { toStoredPhotoValue } from "@/lib/photos"
+import { toUploadedPhotoPath } from "@/lib/photos"
 import type { Member } from "@/lib/types"
 
 // Retreat registration. Default is PRE-registration (status='registered' —
@@ -56,8 +56,20 @@ interface RetreatMeta {
   guardian_contact: string | null
 }
 
-/** Validate the retreat block against the birthdate. Returns meta or an error string. */
-function validateRetreat(input: Record<string, unknown>, birthdate: string): RetreatMeta | string {
+/**
+ * Validate the retreat block against the birthdate. Returns meta or an error string.
+ *
+ * `existingPhoto` is the photo path already on the row, read from the database
+ * rather than sent by the caller. It is kept separate from `input` on purpose:
+ * a client-supplied photo value has to survive toUploadedPhotoPath(), whereas
+ * a value already stored is trusted as-is so an update never silently discards
+ * a photo the registrant was never shown.
+ */
+function validateRetreat(
+  input: Record<string, unknown>,
+  birthdate: string,
+  existingPhoto: string | null = null,
+): RetreatMeta | string {
   const age = ageOn(birthdate, new Date())
   if (age === null) return "Please enter a valid birthday."
   if (age < 12) return "The retreat is for ages 12 and up — please ask a leader to help you register."
@@ -70,10 +82,10 @@ function validateRetreat(input: Record<string, unknown>, birthdate: string): Ret
 
   const isCore = input.is_core === true
 
-  const babyPhotoUrl =
-    typeof input.baby_photo_url === "string" && input.baby_photo_url
-      ? toStoredPhotoValue(input.baby_photo_url)
-      : null
+  // Anything that is not a path our own upload route minted is dropped, not
+  // stored: this value is later rendered as an <img src> on admin screens and
+  // fetched server-side when the baby-photo archive is built.
+  const babyPhotoUrl = toUploadedPhotoPath(input.baby_photo_url) ?? existingPhoto
   // The baby photo is required for YA. Core registrants get the same picker
   // (optional) — whatever they upload is stored either way, just not enforced.
   if (category === "ya" && !isCore && !babyPhotoUrl) {
@@ -143,12 +155,17 @@ export async function PATCH(request: Request) {
   // under-18 guardian rules without making them re-enter anything.
   const merged = {
     ...retreatInput,
-    baby_photo_url: retreatInput.baby_photo_url || existing.baby_photo_url,
     guardian_name: retreatInput.guardian_name || existing.guardian_name,
     guardian_contact: retreatInput.guardian_contact || existing.guardian_contact,
   }
 
-  const meta = validateRetreat(merged, birthdate)
+  // The photo on file is passed separately rather than merged in, so the
+  // caller's value is always the one that has to prove it is a real upload.
+  const meta = validateRetreat(
+    merged,
+    birthdate,
+    (existing.baby_photo_url as string | null) ?? null,
+  )
   if (typeof meta === "string") return NextResponse.json({ error: meta }, { status: 400 })
 
   const { error } = await supabase

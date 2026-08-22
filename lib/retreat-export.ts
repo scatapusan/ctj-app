@@ -6,8 +6,10 @@ import { categoryLabel, type RetreatCategory } from "@/lib/types"
  * and the age arithmetic are unit-testable without a Supabase client.
  *
  * PRIVACY: these rows carry minors' home addresses and phone numbers, plus
- * guardian contacts. The route that calls this is admin-only (NOT core) and
- * sends no-store — see app/api/admin/attendance/export/route.ts.
+ * guardian contacts. The route that calls this is open to admin AND core — the
+ * ministry widened it deliberately, because core leaders run the retreat
+ * day-of — and sends no-store. See app/api/admin/attendance/export/route.ts,
+ * whose header is the authority on that decision.
  */
 
 /**
