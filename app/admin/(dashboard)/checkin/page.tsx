@@ -5,6 +5,7 @@ import Link from "next/link"
 import { categoryLabel, type Event } from "@/lib/types"
 import { toast } from "@/lib/toast"
 import { ListSkeleton } from "@/components/admin/list-skeleton"
+import { useConfirm } from "@/components/admin/confirm-dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Loader2, Search, UserPlus, CheckCircle2, Check, X } from "lucide-react"
@@ -36,6 +37,7 @@ export default function CheckinPage() {
   const [query, setQuery] = useState("")
   const [marking, setMarking] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState<{ url: string; name: string } | null>(null)
+  const { confirm, confirmDialog } = useConfirm()
 
   useEffect(() => {
     async function load() {
@@ -74,7 +76,27 @@ export default function CheckinPage() {
     }
   }
 
+  /**
+   * Mark one pre-registered person attended.
+   *
+   * This confirms, and the reason is the list itself: a marked row leaves the
+   * pre-registered section immediately, so the next name slides up into the
+   * position the finger just touched. Marking is one-way — there is no
+   * un-attend anywhere in the app — so the wrong name marked here cannot be
+   * put back from any screen.
+   *
+   * The dialog names the person, which is the question actually being asked at
+   * a door queue: did I tap the right row?
+   */
   async function markAttended(row: RosterRow) {
+    const ok = await confirm({
+      title: `Mark ${row.name} attended?`,
+      body: "Marking is one-way — there is no un-attend button, so this cannot be corrected from the admin console.",
+      confirmLabel: "Mark attended",
+      tone: "default",
+    })
+    if (!ok) return
+
     setMarking(row.attendanceId)
     try {
       const res = await fetch("/api/admin/checkin", {
@@ -314,6 +336,8 @@ export default function CheckinPage() {
               </div>
             </div>
           )}
+
+          {confirmDialog}
 
           {selectedEvent && (
             <p className="text-xs font-medium text-muted-foreground">

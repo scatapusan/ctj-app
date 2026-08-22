@@ -9,6 +9,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
 import { toast } from "@/lib/toast"
+import { useConfirm } from "@/components/admin/confirm-dialog"
 
 interface RecentCheckIn {
   id: string
@@ -26,6 +27,7 @@ export default function AdminDashboard() {
   const [recent, setRecent] = useState<RecentCheckIn[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const { confirm, confirmDialog } = useConfirm()
 
   useEffect(() => {
     async function load() {
@@ -48,7 +50,34 @@ export default function AdminDashboard() {
     load()
   }, [])
 
+  /**
+   * Push everything to the ministry's Google Sheet.
+   *
+   * The button reads as if it adds rows. It does not: the export CLEARS the
+   * Members and Attendance tabs and rewrites them from the database
+   * (lib/google-sheets.ts), so anything typed into those tabs by hand is gone,
+   * and the only copy is Google's own version history — outside this app.
+   */
   async function handleSyncSheets() {
+    const confirmed = await confirm({
+      title: "Replace the Google Sheet with the current data?",
+      body: (
+        <>
+          <p>
+            This <strong className="text-foreground">clears the Members and Attendance tabs</strong>{" "}
+            and writes them again from scratch. Anything typed into those tabs by hand — notes,
+            tallies, extra columns — is overwritten.
+          </p>
+          <p className="mt-2">
+            The only way back is Google Sheets&apos; own version history.
+          </p>
+        </>
+      ),
+      confirmLabel: "Replace and sync",
+      tone: "destructive",
+    })
+    if (!confirmed) return
+
     setSyncing(true)
     try {
       const res = await fetch("/api/sheets/export", { method: "POST" })
@@ -58,16 +87,10 @@ export default function AdminDashboard() {
           description: `${data.exported.members} members and ${data.exported.attendance} attendance records`,
         })
       } else {
-        toast.error("Sync failed", {
-          description: data.error,
-          action: { label: "Retry", onClick: handleSyncSheets },
-        })
+        toast.error("Sync failed", { description: data.error })
       }
     } catch {
-      toast.error("Network error", {
-        description: "Couldn't reach the server.",
-        action: { label: "Retry", onClick: handleSyncSheets },
-      })
+      toast.error("Network error", { description: "Couldn't reach the server." })
     } finally {
       setSyncing(false)
     }
@@ -161,6 +184,8 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {confirmDialog}
     </div>
   )
 }
