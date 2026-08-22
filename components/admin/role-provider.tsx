@@ -7,6 +7,8 @@ type Role = "superadmin" | "core" | "member"
 interface RoleContextValue {
   role: Role
   email: string | null
+  /** The signed-in member's own id — lets a screen recognise "this is you". */
+  memberId: string | null
   isSuperadmin: boolean
   isCore: boolean
   loading: boolean
@@ -15,6 +17,7 @@ interface RoleContextValue {
 const RoleContext = createContext<RoleContextValue>({
   role: "member",
   email: null,
+  memberId: null,
   isSuperadmin: false,
   isCore: false,
   loading: true,
@@ -27,6 +30,7 @@ export function useRole() {
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role>("member")
   const [email, setEmail] = useState<string | null>(null)
+  const [memberId, setMemberId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -41,6 +45,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
           if (data.role === "admin") setRole("superadmin")
           else if (data.role === "core") setRole("core")
           setEmail(data.email ?? null)
+          setMemberId(data.memberId ?? null)
         }
       } catch {
         // Network error — leave defaults
@@ -59,6 +64,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       value={{
         role,
         email,
+        memberId,
         isSuperadmin: role === "superadmin",
         isCore: role === "core",
         loading,

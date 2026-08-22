@@ -61,9 +61,28 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
     setCopied(false)
   }
 
+  /**
+   * Closing discards the form — and, once an invite has been created, the ONLY
+   * copy of that person's PIN. The account is already live in the database at
+   * that point, so a stray tap on the backdrop used to leave a login nobody
+   * knows the PIN for, recoverable only by re-inviting and overwriting it.
+   */
   function handleClose() {
+    if (created && !copied) {
+      const ok = window.confirm(
+        `Close without saving ${created.email}'s PIN?\n\n` +
+          `The account is already created. This PIN is shown once and cannot be ` +
+          `retrieved — you would have to invite them again to set a new one.`,
+      )
+      if (!ok) return
+    }
     reset()
     onClose()
+  }
+
+  /** The backdrop must never discard a PIN silently. */
+  function handleBackdropClick() {
+    handleClose()
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -109,7 +128,7 @@ export function InviteMemberDialog({ open, onClose, onInvited }: InviteMemberDia
       aria-modal="true"
       aria-labelledby="invite-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm"
-      onClick={handleClose}
+      onClick={handleBackdropClick}
     >
       <div
         className="glass rounded-2xl p-6 w-full max-w-md space-y-5 max-h-[90vh] overflow-y-auto"

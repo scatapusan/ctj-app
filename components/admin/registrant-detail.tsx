@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { format } from "date-fns"
-import { X, ImageOff } from "lucide-react"
+import { X, ImageOff, Trash2 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 /**
@@ -84,9 +84,19 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 export function RegistrantDetail({
   attendanceId,
   onClose,
+  onCancelRegistration,
 }: {
   attendanceId: string | null
   onClose: () => void
+  /**
+   * Cancel this registration. Omitted for anyone who may not — which is core
+   * leaders, since the endpoint is admin-only.
+   *
+   * This control used to be a trash icon in the table row, a thumb-width from
+   * the button that opens this panel. It lives here now so that destroying a
+   * registration is only reachable after opening it and reading whose it is.
+   */
+  onCancelRegistration?: (record: RegistrantDetail) => void
 }) {
   const [record, setRecord] = useState<RegistrantDetail | null>(null)
   const [loading, setLoading] = useState(false)
@@ -361,6 +371,22 @@ export function RegistrantDetail({
               Personal details of a registrant — including minors. Please don&apos;t screenshot or
               forward this screen. The photo link expires within minutes.
             </p>
+
+            {onCancelRegistration && (
+              <div className="pt-3 mt-1 border-t border-border/40">
+                <button
+                  type="button"
+                  onClick={() => onCancelRegistration(record)}
+                  className="inline-flex items-center gap-2 min-h-[44px] px-3 rounded-xl text-sm font-bold text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <Trash2 className="size-4" />
+                  Cancel this registration
+                </button>
+                <p className="text-[11px] font-medium text-muted-foreground mt-1">
+                  Removes {record.name} from this event. This cannot be undone.
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>

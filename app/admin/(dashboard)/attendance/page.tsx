@@ -6,14 +6,14 @@ import { DataTable } from "@/components/admin/data-table"
 import { ListSkeleton } from "@/components/admin/list-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { RegistrantDetail } from "@/components/admin/registrant-detail"
+import { RegistrantDetail, type RegistrantDetail as RegistrantDetailRecord } from "@/components/admin/registrant-detail"
 import { useRole } from "@/components/admin/role-provider"
+import { useConfirm } from "@/components/admin/confirm-dialog"
 import {
   Download,
   Calendar,
   Users,
   ClipboardList,
-  Trash2,
   Loader2,
   Eye,
   Image as ImageIcon,
@@ -85,41 +85,9 @@ function ViewButton({
       }}
       aria-label={`View full details for ${record.member_name}`}
       title="View full registration details"
-      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+      className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
     >
       <Eye className="size-4" />
-    </button>
-  )
-}
-
-/**
- * Cancel/remove one registration. Irreversible, so it always confirms first,
- * and admin-only — the endpoint refuses a core session, so showing the control
- * to core leaders only ever produced a failure toast.
- */
-function CancelButton({
-  record,
-  onCancel,
-  hidden,
-}: {
-  record: AttendanceRecord
-  onCancel: (record: AttendanceRecord) => void
-  /** Role not resolved yet: hold the space, don't let the row jump. */
-  hidden?: boolean
-}) {
-  if (hidden) return <span className="inline-block size-7" aria-hidden="true" />
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation()
-        onCancel(record)
-      }}
-      aria-label={`Cancel registration for ${record.member_name}`}
-      title="Cancel this registration"
-      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-    >
-      <Trash2 className="size-4" />
     </button>
   )
 }
@@ -163,6 +131,7 @@ export default function AttendancePage() {
   // cancel control vanish and reappear for a real admin. The slot is held open
   // instead of collapsing the row.
   const { isSuperadmin, loading: roleLoading } = useRole()
+  const { confirm, confirmDialog } = useConfirm()
 
   useEffect(() => {
     async function load() {
@@ -216,7 +185,33 @@ export default function AttendancePage() {
     }
   }
 
+  /**
+   * Correct one registrant's category. It writes to the database on a single
+   * tap from a <select> that sits inside a row, so it asks first — the mistake
+   * it guards against is scrolling a list on a phone and changing a stranger's
+   * registration without ever noticing.
+   */
   async function changeCategory(id: string, value: "youth" | "ya" | "core") {
+    const record = records.find((r) => r.id === id)
+    if (!record) return
+
+    const label = value === "core" ? "Core" : value === "ya" ? "YA" : "Youth"
+    const ok = await confirm({
+      title: `Change ${record.member_name} to ${label}?`,
+      body:
+        value === "core"
+          ? "Core is a registration label, so their age bracket is kept as it is. You can change this back at any time."
+          : `This replaces their age bracket with ${label} and clears the Core label. You can change this back at any time.`,
+      confirmLabel: `Set to ${label}`,
+      tone: "default",
+    })
+    if (!ok) {
+      // Put the <select> back to what is actually stored: it is a controlled
+      // input, but React will not re-render it if state never changed.
+      setRecords((rs) => [...rs])
+      return
+    }
+
     const previous = records
     const forEvent = selectedEventId
     // Optimistic: Core keeps the stored bracket, Youth/YA clears the label.
@@ -243,16 +238,30 @@ export default function AttendancePage() {
 
   async function cancelRegistration(record: AttendanceRecord) {
     const label = record.status === "attended" ? "attendance record" : "pre-registration"
-    const ok = window.confirm(
-      `Cancel the ${label} for ${record.member_name}?\n\n` +
-        `This removes them from this event's list and cannot be undone. ` +
-        `Their member profile is kept, and they can register again later.`,
-    )
+    const ok = await confirm({
+      title: `Cancel ${record.member_name}'s ${label}?`,
+      body: (
+        <>
+          <p>
+            This removes them from this event&apos;s list and{" "}
+            <strong className="text-foreground">cannot be undone</strong>. Their baby photo for this
+            event is deleted too.
+          </p>
+          <p className="mt-2">
+            Their member profile is kept, and they can register again later.
+          </p>
+        </>
+      ),
+      confirmLabel: "Cancel registration",
+      cancelLabel: "Keep it",
+      tone: "destructive",
+    })
     if (!ok) return
 
     const previous = records
     const forEvent = selectedEventId
     setRecords((rs) => rs.filter((r) => r.id !== record.id))
+    // The panel is where this is triggered from now, so it always closes.
     if (detailId === record.id) setDetailId(null)
     try {
       const res = await fetch(`/api/admin/attendance?id=${encodeURIComponent(record.id)}`, {
@@ -534,15 +543,8 @@ export default function AttendancePage() {
                   render: (item) => {
                     const r = item as unknown as AttendanceRecord
                     return (
-                      <span className="flex items-center gap-1 justify-end">
+                      <span className="flex items-center justify-end">
                         <ViewButton record={r} onView={openDetail} />
-                        {(isSuperadmin || roleLoading) && (
-                          <CancelButton
-                            record={r}
-                            onCancel={cancelRegistration}
-                            hidden={roleLoading}
-                          />
-                        )}
                       </span>
                     )
                   },
@@ -563,16 +565,13 @@ export default function AttendancePage() {
                       <p className="text-xs text-muted-foreground truncate">{r.email}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <div className="flex items-center gap-1">
+                      {/* Category and View only. Cancelling a registration
+                          lives in the detail panel now — it used to sit one
+                          thumb-width from View, which on a phone is a mis-tap
+                          away from an irreversible delete. */}
+                      <div className="flex items-center gap-2">
                         <CategorySelect record={r} onChange={changeCategory} />
                         <ViewButton record={r} onView={openDetail} />
-                        {(isSuperadmin || roleLoading) && (
-                          <CancelButton
-                            record={r}
-                            onCancel={cancelRegistration}
-                            hidden={roleLoading}
-                          />
-                        )}
                       </div>
                       <StatusBadge status={r.status} />
                       <span className="text-xs text-accent/80 font-medium">
@@ -594,7 +593,25 @@ export default function AttendancePage() {
         </div>
       )}
 
-      <RegistrantDetail attendanceId={detailId} onClose={closeDetail} />
+      <RegistrantDetail
+        attendanceId={detailId}
+        onClose={closeDetail}
+        // Cancelling is admin-only, and it lives here rather than in the row so
+        // it can never be reached without first opening the record and seeing
+        // whose it is. Withheld until the role is known.
+        onCancelRegistration={
+          isSuperadmin && !roleLoading
+            ? (detail: RegistrantDetailRecord) =>
+                cancelRegistration({
+                  id: detail.id,
+                  member_name: detail.name,
+                  status: detail.status,
+                } as AttendanceRecord)
+            : undefined
+        }
+      />
+
+      {confirmDialog}
     </div>
   )
 }

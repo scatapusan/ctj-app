@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "@/lib/toast"
+import { useConfirm } from "@/components/admin/confirm-dialog"
 
 export default function EventsPage() {
   const { isSuperadmin } = useRole()
@@ -43,7 +44,7 @@ export default function EventsPage() {
   const [qrEvent, setQrEvent] = useState<Event | null>(null)
 
   // Delete confirmation
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const { confirm, confirmDialog } = useConfirm()
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
 
@@ -139,24 +140,49 @@ export default function EventsPage() {
     loadEvents()
   }
 
-  async function handleDelete(id: string) {
-    // Attendance rows cascade via the FK (attendance_event_id_fkey ON DELETE CASCADE).
+  async function handleDelete(event: Event) {
+    // Attendance rows cascade via the FK (attendance_event_id_fkey ON DELETE
+    // CASCADE), so this is the single most destructive action in the console:
+    // every registration for the event, including the retreat's guardian
+    // contacts and baby photos, goes with it. The dialog says so, and says how
+    // many, because the list already knows the count.
+    const registered = (event as { attendance_count?: number }).attendance_count ?? 0
+    const confirmed = await confirm({
+      title: `Permanently delete "${event.name}"?`,
+      body: (
+        <>
+          <p>
+            This also deletes{" "}
+            <strong className="text-foreground">
+              {registered === 0
+                ? "every registration and attendance record for it"
+                : `all ${registered} registration${registered === 1 ? "" : "s"} for it`}
+            </strong>
+            , including the answers people gave on the retreat form — birthdays, addresses,
+            guardian contacts and baby photos.
+          </p>
+          <p className="mt-2">Nothing in the console can bring any of it back.</p>
+        </>
+      ),
+      confirmLabel: "Delete event and registrations",
+      cancelLabel: "Keep event",
+      tone: "destructive",
+    })
+    if (!confirmed) return
+
     try {
-      const res = await fetch(`/api/admin/events/${id}`, { method: "DELETE" })
+      const res = await fetch(`/api/admin/events/${event.id}`, { method: "DELETE" })
       if (!res.ok) {
-        toast.error("Couldn't delete event", {
-          action: { label: "Retry", onClick: () => handleDelete(id) },
-        })
+        // No Retry action: one tap from a toast must not re-fire a cascading
+        // delete without passing the dialog again.
+        toast.error("Couldn't delete event. Try again from the list.")
         return
       }
     } catch {
-      toast.error("Network error", {
-        action: { label: "Retry", onClick: () => handleDelete(id) },
-      })
+      toast.error("Network error. The event was not deleted.")
       return
     }
     toast.success("Event deleted")
-    setDeletingId(null)
     loadEvents()
   }
 
@@ -331,43 +357,27 @@ export default function EventsPage() {
                   </Button>
                 )}
 
+                {/* One button, one dialog. The old two-step rendered "Confirm"
+                    where the trash icon had just been, so two taps in the same
+                    place deleted an event and every registration for it. */}
                 {isSuperadmin && (
-                  deletingId === event.id ? (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive text-xs"
-                        onClick={() => handleDelete(event.id)}
-                      >
-                        Confirm
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs"
-                        onClick={() => setDeletingId(null)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={() => setDeletingId(event.id)}
-                      title="Delete"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  )
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => handleDelete(event)}
+                    title="Delete"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
                 )}
               </div>
             </div>
           ))
         )}
       </div>
+
+      {confirmDialog}
 
       {/* QR Modal */}
       {qrEvent && (

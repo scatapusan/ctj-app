@@ -24,11 +24,13 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "@/lib/toast"
+import { useConfirm } from "@/components/admin/confirm-dialog"
 
 const MEMBER_GROUPS = ["Youth", "YA", "Singles"] as const
 
 export default function MembersPage() {
-  const { isSuperadmin } = useRole()
+  const { isSuperadmin, memberId } = useRole()
+  const { confirm, confirmDialog } = useConfirm()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
@@ -59,6 +61,10 @@ export default function MembersPage() {
 
   async function selectMember(member: Member) {
     setSelectedMember(member)
+    // Both of these are per-member and were previously only ever overwritten,
+    // never cleared. Opening B after A rendered — and EXPORTED — A's attendance
+    // history under B's name until B's fetch resolved.
+    setAttendanceHistory([])
     try {
       const res = await fetch(`/api/admin/members/${member.id}`)
       if (res.ok) {
@@ -83,6 +89,32 @@ export default function MembersPage() {
   }
 
   async function toggleAdmin(member: Member) {
+    const removing = member.is_admin
+    const isSelf = member.id === memberId
+    const confirmed = await confirm({
+      title: removing
+        ? `Remove admin access from ${member.first_name} ${member.last_name}?`
+        : `Give ${member.first_name} ${member.last_name} admin access?`,
+      body: removing ? (
+        <>
+          <p>
+            They keep their core-leader access and can still sign in, but they
+            lose event editing, member deletion and the Sheets sync.
+          </p>
+          {isSelf && (
+            <p className="mt-2 text-destructive font-bold">
+              This is your own account. You will not be able to give it back yourself.
+            </p>
+          )}
+        </>
+      ) : (
+        "Admins can edit and delete events, delete members, reset PINs and push everything to Google Sheets."
+      ),
+      confirmLabel: removing ? "Remove admin access" : "Grant admin access",
+      tone: removing ? "destructive" : "default",
+    })
+    if (!confirmed) return
+
     setActionLoading(true)
     const ok = await patchMember(member.id, { action: "toggleAdmin", value: !member.is_admin }).catch(() => false)
     if (!ok) {
@@ -99,6 +131,19 @@ export default function MembersPage() {
   }
 
   async function toggleCore(member: Member) {
+    const removing = member.is_youth_ya_core
+    const confirmed = await confirm({
+      title: removing
+        ? `Remove core access from ${member.first_name} ${member.last_name}?`
+        : `Give ${member.first_name} ${member.last_name} core access?`,
+      body: removing
+        ? "They will no longer be able to sign in to the admin console at all, including the day-of check-in screen."
+        : "Core leaders can sign in to the console: the check-in screen, the attendance list, registrant details and the exports.",
+      confirmLabel: removing ? "Remove core access" : "Grant core access",
+      tone: removing ? "destructive" : "default",
+    })
+    if (!confirmed) return
+
     setActionLoading(true)
     const ok = await patchMember(member.id, { action: "toggleCore", value: !member.is_youth_ya_core }).catch(() => false)
     if (!ok) {
@@ -114,11 +159,19 @@ export default function MembersPage() {
     setActionLoading(false)
   }
 
-  async function resetPin(memberId: string) {
+  async function resetPin(targetId: string, name: string) {
+    const confirmed = await confirm({
+      title: `Reset ${name}'s PIN to 1234?`,
+      body: "Their current PIN stops working immediately, and nobody is notified — you have to tell them yourself.",
+      confirmLabel: "Reset PIN",
+      tone: "destructive",
+    })
+    if (!confirmed) return
+
     setActionLoading(true)
-    const ok = await patchMember(memberId, { action: "resetPin" }).catch(() => false)
+    const ok = await patchMember(targetId, { action: "resetPin" }).catch(() => false)
     if (!ok) {
-      toast.error("Couldn't reset PIN", { action: { label: "Retry", onClick: () => resetPin(memberId) } })
+      toast.error("Couldn't reset PIN")
     } else {
       toast.success("PIN reset to 1234", {
         description: "Ask the member to change it on their next sign-in.",
@@ -127,44 +180,70 @@ export default function MembersPage() {
     setActionLoading(false)
   }
 
-  async function setMemberGroup(memberId: string, group: string | null) {
+  async function setMemberGroup(targetId: string, group: string | null, name: string) {
+    const confirmed = await confirm({
+      title: group ? `Move ${name} to ${group}?` : `Clear ${name}'s group?`,
+      body: "This changes their roster record. You can set it back at any time.",
+      confirmLabel: group ? `Move to ${group}` : "Clear group",
+      tone: "default",
+    })
+    if (!confirmed) return
+
     setActionLoading(true)
-    const ok = await patchMember(memberId, { action: "setGroup", group }).catch(() => false)
+    const ok = await patchMember(targetId, { action: "setGroup", group }).catch(() => false)
     if (!ok) {
-      toast.error("Couldn't update group", { action: { label: "Retry", onClick: () => setMemberGroup(memberId, group) } })
+      toast.error("Couldn't update group")
       setActionLoading(false)
       return
     }
     toast.success(group ? `Set to ${group}` : "Group cleared")
     await loadMembers()
-    if (selectedMember?.id === memberId) {
+    if (selectedMember?.id === targetId) {
       setSelectedMember({ ...selectedMember, member_group: group })
     }
     setActionLoading(false)
   }
 
-  const [deletingMember, setDeletingMember] = useState(false)
-
   async function handleDeleteMember(member: Member) {
+    const name = `${member.first_name} ${member.last_name}`.trim()
+    const confirmed = await confirm({
+      title: `Permanently delete ${name}?`,
+      body: (
+        <>
+          <p>
+            This deletes their member record and{" "}
+            <strong className="text-foreground">every event they have ever registered for or
+            attended</strong>
+            {attendanceHistory.length > 0 && ` — ${attendanceHistory.length} on file`}, along with
+            their photos.
+          </p>
+          <p className="mt-2">
+            It cannot be undone, and nothing in the console can bring it back.
+          </p>
+        </>
+      ),
+      confirmLabel: "Delete permanently",
+      cancelLabel: "Keep member",
+      tone: "destructive",
+    })
+    if (!confirmed) return
+
     setActionLoading(true)
     // Attendance cascades via the FK; the photo is removed server-side.
     try {
       const res = await fetch(`/api/admin/members/${member.id}`, { method: "DELETE" })
       if (!res.ok) {
-        toast.error("Couldn't delete member", {
-          action: { label: "Retry", onClick: () => handleDeleteMember(member) },
-        })
+        // Deliberately NO Retry action: a retry from a toast is a single tap
+        // that re-fires a permanent delete without passing the dialog again.
+        toast.error("Couldn't delete member. Try again from their profile.")
         setActionLoading(false)
         return
       }
-      toast.success(`${member.first_name} ${member.last_name} deleted`)
+      toast.success(`${name} deleted`)
       setSelectedMember(null)
-      setDeletingMember(false)
       await loadMembers()
     } catch {
-      toast.error("Couldn't delete member", {
-        action: { label: "Retry", onClick: () => handleDeleteMember(member) },
-      })
+      toast.error("Couldn't delete member. Try again from their profile.")
     }
     setActionLoading(false)
   }
@@ -373,7 +452,13 @@ export default function MembersPage() {
                     variant={m.member_group === group ? "gradient" : "outline"}
                     size="sm"
                     className="text-xs"
-                    onClick={() => setMemberGroup(m.id, m.member_group === group ? null : group)}
+                    onClick={() =>
+                      setMemberGroup(
+                        m.id,
+                        m.member_group === group ? null : group,
+                        `${m.first_name} ${m.last_name}`.trim(),
+                      )
+                    }
                     disabled={actionLoading}
                   >
                     {group}
@@ -424,7 +509,7 @@ export default function MembersPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => resetPin(m.id)}
+                  onClick={() => resetPin(m.id, `${m.first_name} ${m.last_name}`.trim())}
                   disabled={actionLoading}
                 >
                   <KeyRound className="size-4 mr-1.5" />
@@ -445,38 +530,19 @@ export default function MembersPage() {
                   Export Data
                 </Button>
 
-                {deletingMember ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-destructive">Permanently delete all data?</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive text-xs"
-                      onClick={() => handleDeleteMember(m)}
-                      disabled={actionLoading}
-                    >
-                      Confirm Delete
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => setDeletingMember(false)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => setDeletingMember(true)}
-                  >
-                    <Trash2 className="size-4 mr-1.5" />
-                    Delete Member
-                  </Button>
-                )}
+                {/* One button, one dialog. The old two-step put "Confirm
+                    Delete" where "Delete Member" had just been, so two quick
+                    taps in the same spot destroyed the record. */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => handleDeleteMember(m)}
+                  disabled={actionLoading}
+                >
+                  <Trash2 className="size-4 mr-1.5" />
+                  Delete Member
+                </Button>
               </div>
             )}
           </div>
@@ -509,6 +575,11 @@ export default function MembersPage() {
             </div>
           )}
         </div>
+
+        {/* The detail view is an early return, so the dialog has to be
+            rendered here too — every action that asks for confirmation lives
+            on this branch. */}
+        {confirmDialog}
       </div>
     )
   }
@@ -656,6 +727,8 @@ export default function MembersPage() {
           )
         }}
       />
+
+      {confirmDialog}
     </div>
   )
 }
