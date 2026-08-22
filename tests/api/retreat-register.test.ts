@@ -151,7 +151,7 @@ describe("POST /api/attend/retreat-register — new person", () => {
     use({ rpc: { data: okMember, error: null } })
     const body = validBody()
     body.member.birthdate = birthdateForAge(25)
-    body.retreat = { category: "ya", baby_photo_url: "https://x.test/baby.jpg" } as never
+    body.retreat = { category: "ya", baby_photo_url: "baby-1786166356633-abc.jpeg" } as never
     const res = await retreatPOST(req(body))
     expect(res.status).toBe(200)
   })
@@ -195,7 +195,7 @@ describe("POST /api/attend/retreat-register — existing member", () => {
     retreat: {
       birthdate: birthdateForAge(24),
       category: "ya",
-      baby_photo_url: "https://x.test/baby.jpg",
+      baby_photo_url: "baby-1786166356633-abc.jpeg",
     },
   })
 
@@ -242,7 +242,7 @@ describe("POST /api/attend/retreat-register — self-selected core", () => {
   const body = () => ({
     eventId: "e1",
     memberId: "m1",
-    retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: "https://x.test/b.jpg" },
+    retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: "baby-1786166356633-abc.jpeg" },
   })
   const plainMember = { id: "m1", first_name: "Plain", last_name: "Member", email: "p@x.test", is_youth_ya_core: false }
   const coreMember = { id: "m1", first_name: "Core", last_name: "Leader", email: "c@x.test", is_youth_ya_core: true }
@@ -342,7 +342,7 @@ describe("POST /api/attend/retreat-register — self-selected core", () => {
         ...body(),
         retreat: {
           birthdate: birthdateForAge(24), category: "ya", is_core: true,
-          baby_photo_url: "https://x.test/core-baby.jpg",
+          baby_photo_url: "baby-1786166356700-core.jpeg",
         },
       }),
     )
@@ -362,7 +362,7 @@ describe("POST /api/attend/retreat-register — self-selected core", () => {
         ...body(),
         retreat: {
           birthdate: birthdateForAge(20), category: "youth", is_core: true,
-          baby_photo_url: "https://x.test/young-core.jpg",
+          baby_photo_url: "baby-1786166356701-young.jpeg",
         },
       }),
     )
@@ -414,7 +414,7 @@ describe("POST /api/attend/retreat-register — self-selected core", () => {
         email: "plainnew@x.test",
         privacyConsent: true,
         member: { first_name: "Plain", last_name: "New", birthdate: birthdateForAge(25) },
-        retreat: { category: "ya", baby_photo_url: "https://x.test/b.jpg" },
+        retreat: { category: "ya", baby_photo_url: "baby-1786166356633-abc.jpeg" },
       }),
     )
     expect(res.status).toBe(200)
@@ -453,7 +453,7 @@ describe("POST /api/attend/retreat-register — walk-in mode (day-of)", () => {
         eventId: "e1",
         memberId: "m1",
         walkIn: true,
-        retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: "https://x.test/b.jpg" },
+        retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: "baby-1786166356633-abc.jpeg" },
       }),
     )
     expect(res.status).toBe(200)
@@ -472,7 +472,7 @@ describe("POST /api/attend/retreat-register — walk-in mode (day-of)", () => {
       req({
         eventId: "e1",
         memberId: "m1",
-        retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: "https://x.test/b.jpg" },
+        retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: "baby-1786166356633-abc.jpeg" },
       }),
     )
     expect(res.status).toBe(200)
@@ -549,10 +549,10 @@ describe("PATCH /api/attend/retreat-register — fix an existing registration", 
     await retreatPATCH(
       patchReq({
         ...body(),
-        retreat: { ...body().retreat, baby_photo_url: "https://x.test/new-baby.jpg" },
+        retreat: { ...body().retreat, baby_photo_url: "baby-1786166356702-new.jpeg" },
       }),
     )
-    expect(payload!.baby_photo_url).toBe("https://x.test/new-baby.jpg")
+    expect(payload!.baby_photo_url).toBe("baby-1786166356702-new.jpeg")
   })
 
   it("lets a registrant add a photo to a Core registration that had none", async () => {
@@ -564,12 +564,12 @@ describe("PATCH /api/attend/retreat-register — fix an existing registration", 
     const res = await retreatPATCH(
       patchReq({
         ...body(),
-        retreat: { ...body().retreat, is_core: true, baby_photo_url: "https://x.test/late-baby.jpg" },
+        retreat: { ...body().retreat, is_core: true, baby_photo_url: "baby-1786166356703-late.jpeg" },
       }),
     )
     expect(res.status).toBe(200)
     expect(payload!.is_core).toBe(true)
-    expect(payload!.baby_photo_url).toBe("https://x.test/late-baby.jpg")
+    expect(payload!.baby_photo_url).toBe("baby-1786166356703-late.jpeg")
   })
 
   it("404s when there is no registration to update", async () => {
@@ -619,6 +619,76 @@ describe("PATCH /api/attend/retreat-register — fix an existing registration", 
     for (let i = 0; i < 10; i++) await retreatPATCH(patchReq(body(), ip))
     const res = await retreatPATCH(patchReq(body(), ip))
     expect(res.status).toBe(429)
+  })
+})
+
+describe("retreat-register — the photo value a public caller may store", () => {
+  // The baby photo path arrives from an unauthenticated form and is later
+  // rendered as an <img src> on admin screens and read server-side when the
+  // baby-photo archive is built. Only a path our own upload route minted is
+  // allowed anywhere near the column.
+  const HOSTILE = "http://169.254.169.254/latest/meta-data/"
+
+  const newPersonBody = (photo: string) => ({
+    eventId: "e1",
+    email: "ya@x.test",
+    privacyConsent: true,
+    member: { first_name: "Ana", last_name: "Reyes", birthdate: birthdateForAge(24) },
+    retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: photo },
+  })
+
+  it("stores a real upload path on registration", async () => {
+    let args: Record<string, unknown> | undefined
+    use({ rpc: { data: okMember, error: null }, onRpc: (_fn, a) => { args = a } })
+    const res = await retreatPOST(req(newPersonBody("baby-1786166356633-abc.jpeg")))
+    expect(res.status).toBe(200)
+    expect((args!.p_retreat as Record<string, unknown>).baby_photo_url).toBe(
+      "baby-1786166356633-abc.jpeg",
+    )
+  })
+
+  it("refuses to register a YA whose 'photo' is an arbitrary address", async () => {
+    let called = false
+    use({ rpc: { data: okMember, error: null }, onRpc: () => { called = true } })
+    const res = await retreatPOST(req(newPersonBody(HOSTILE)))
+    // The value is dropped, so YA's required-photo rule is what rejects this —
+    // nothing hostile ever reaches the database.
+    expect(res.status).toBe(400)
+    expect(called).toBe(false)
+  })
+
+  it("drops an arbitrary address rather than storing it, for a Core registrant", async () => {
+    let args: Record<string, unknown> | undefined
+    use({ rpc: { data: okMember, error: null }, onRpc: (_fn, a) => { args = a } })
+    // Core's photo is optional, so this request succeeds — the point is what
+    // gets written.
+    const body = newPersonBody(HOSTILE)
+    body.retreat = { ...body.retreat, is_core: true } as never
+    const res = await retreatPOST(req(body))
+    expect(res.status).toBe(200)
+    expect((args!.p_retreat as Record<string, unknown>).baby_photo_url).toBeNull()
+  })
+
+  it("does not let an update overwrite a stored photo with an address", async () => {
+    let payload: Record<string, unknown> | undefined
+    use({
+      select: { attendance: { data: { id: "a1", baby_photo_url: "baby-existing.jpg", guardian_name: null, guardian_contact: null } } },
+      onUpdate: (_t, p) => { payload = p },
+    })
+    const res = await retreatPATCH(
+      new Request("http://localhost/api/attend/retreat-register", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-forwarded-for": `10.2.0.${++ipCounter}` },
+        body: JSON.stringify({
+          eventId: "e1",
+          memberId: "m1",
+          retreat: { birthdate: birthdateForAge(24), category: "ya", baby_photo_url: HOSTILE },
+        }),
+      }),
+    )
+    expect(res.status).toBe(200)
+    // The photo already on file survives; the supplied address does not land.
+    expect(payload!.baby_photo_url).toBe("baby-existing.jpg")
   })
 })
 

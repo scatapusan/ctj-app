@@ -23,6 +23,8 @@ interface Cfg {
   memberRows?: Record<string, unknown>[]
   onUpdate?: (payload: Record<string, unknown>, filters: Record<string, string>) => void
   updateError?: unknown
+  /** Object paths storage is asked to sign — captured to prove what is sent. */
+  onSign?: (paths: string[]) => void
 }
 
 function makeClient(cfg: Cfg) {
@@ -68,6 +70,17 @@ function makeClient(cfg: Cfg) {
           }),
       })
       return qb
+    },
+    storage: {
+      from: () => ({
+        createSignedUrls: async (paths: string[]) => {
+          cfg.onSign?.(paths)
+          return {
+            data: paths.map((p) => ({ path: p, signedUrl: `https://signed.test/${p}?token=abc` })),
+            error: null,
+          }
+        },
+      }),
     },
   }
 }
@@ -121,6 +134,54 @@ describe("GET /api/admin/checkin", () => {
     use({})
     const res = await rosterGET(new Request("http://localhost/api/admin/checkin"))
     expect(res.status).toBe(400)
+  })
+})
+
+describe("GET /api/admin/checkin — baby photos on the day-of roster", () => {
+  beforeEach(() => vi.mocked(readSession).mockReturnValue(CORE))
+
+  const roster = (photo: string | null) => ({
+    rosterRows: [
+      {
+        id: "a1", member_id: "m1", status: "registered",
+        checked_in_at: "2026-08-15T02:30:00Z", attended_at: null,
+        category: "ya", is_core: false, baby_photo_url: photo,
+        guardian_name: null, guardian_contact: null,
+      },
+    ],
+    memberRows: [{ id: "m1", first_name: "Juan", last_name: "Dela Cruz", nickname: null, is_guest: false }],
+  })
+
+  async function rosterOf(): Promise<Record<string, unknown>[]> {
+    const res = await rosterGET(new Request("http://localhost/api/admin/checkin?eventId=e1"))
+    return (await res.json()).roster
+  }
+
+  it("signs a real stored photo for the leader's screen", async () => {
+    let signed: string[] = []
+    use({ ...roster("baby-1786166356633-abc.jpeg"), onSign: (p) => { signed = p } })
+    const [row] = await rosterOf()
+    expect(signed).toEqual(["baby-1786166356633-abc.jpeg"])
+    expect(row.babyPhotoUrl).toBe("https://signed.test/baby-1786166356633-abc.jpeg?token=abc")
+  })
+
+  // baby_photo_url is written from a PUBLIC form. A value that is not one of
+  // our bucket objects is not turned into an <img src> on a signed-in leader's
+  // phone, whatever it is.
+  it("renders nothing for a value that is not one of our stored objects", async () => {
+    for (const hostile of ["https://tracker.test/pixel.gif", "../../other/secret.jpg", "nested/x.jpg"]) {
+      let signed: string[] | null = null
+      use({ ...roster(hostile), onSign: (p) => { signed = p } })
+      const [row] = await rosterOf()
+      expect(row.babyPhotoUrl).toBeNull()
+      // Nothing was even asked of storage.
+      expect(signed).toBeNull()
+    }
+  })
+
+  it("renders nothing when the registrant has no photo", async () => {
+    use(roster(null))
+    expect((await rosterOf())[0].babyPhotoUrl).toBeNull()
   })
 })
 

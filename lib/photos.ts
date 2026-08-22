@@ -113,6 +113,63 @@ export function toStoredPhotoValue(value: string | null | undefined): string | n
   return value
 }
 
+/**
+ * Shape of an object path this app itself created: a flat, bucket-relative name
+ * like 'baby-1786166356633-ej1nor96lw.jpeg'. generatePhotoPath() below is the
+ * only thing that mints these, and it never produces a folder, so a slash, a
+ * scheme or a '..' is by definition not one of ours.
+ */
+const UPLOADED_PATH = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/
+
+/** Whether a value is a flat, bucket-relative object name this app minted. */
+function isUploadedPath(value: string): boolean {
+  return !value.includes("..") && UPLOADED_PATH.test(value)
+}
+
+/**
+ * The stored path for a photo a PUBLIC caller claims to have uploaded, or null.
+ *
+ * toStoredPhotoValue() above deliberately passes an unrecognised URL straight
+ * through, because members.photo_url legitimately holds third-party URLs
+ * imported from Bubble. Nothing legitimate does that for a retreat baby photo:
+ * /api/photos/upload is the only writer and it returns a bucket path. So on the
+ * public retreat form the value is pinned to that shape.
+ *
+ * Without this, a registrant could POST any string — including
+ * 'http://169.254.169.254/…' or a tracking pixel — and the app would later
+ * render it as an <img src> on an admin screen and, worse, fetch it
+ * server-side while building the photo archive.
+ */
+export function toUploadedPhotoPath(value: unknown): string | null {
+  if (typeof value !== "string" || value === "") return null
+  // Collapse one of our own storage URLs (signed or public) back to its path
+  // first, so a client that echoes a read endpoint's value back still works.
+  const collapsed = toStoredPhotoValue(value)
+  if (!collapsed) return null
+  return isUploadedPath(collapsed) ? collapsed : null
+}
+
+/**
+ * The bucket object to read for a RETREAT BABY PHOTO, or null.
+ *
+ * Unlike members.photo_url — which legitimately holds third-party URLs from the
+ * Bubble import — attendance.baby_photo_url is only ever written from
+ * /api/photos/upload, and the private-bucket migration rewrote the handful that
+ * predated it. So a value here that still looks like a URL is not one of our
+ * photos, and it arrived from a public form. It is never signed, rendered or
+ * fetched: the screens show "photo unavailable" and the archive says so in its
+ * note, rather than pointing an admin's browser at an address a registrant
+ * chose.
+ */
+export function babyPhotoObjectPath(value: string | null | undefined): string | null {
+  if (typeof value !== "string" || value === "") return null
+  // The SAME shape check the write side applies, deliberately repeated on read:
+  // rows written before that guard existed have never been re-validated, and
+  // this value is passed straight to storage.download() with the service-role
+  // key, where a slash or a '..' would address a different object entirely.
+  return isUploadedPath(value) ? value : null
+}
+
 /** Server-side filename generation — never trust a client-supplied name. */
 export function generatePhotoPath(kind: "profile" | "baby", contentType: string): string {
   const ext =

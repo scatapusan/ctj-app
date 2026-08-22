@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/admin-auth"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { pushAttendanceToSheets } from "@/lib/attend-sheets"
-import { signPhotos } from "@/lib/photos"
+import { signPhotos, babyPhotoObjectPath } from "@/lib/photos"
 
 // Staff day-of check-in (admin or core).
 //
@@ -44,8 +44,12 @@ export async function GET(request: Request) {
       .select("id, first_name, last_name, nickname, is_guest")
       .in("id", memberIds)
     const memberMap = new Map((members ?? []).map((m) => [m.id, m]))
-    // Baby photos live in a private bucket — sign them for signed-in staff only.
-    const signed = await signPhotos(supabase, list.map((r) => r.baby_photo_url))
+    // Baby photos live in a private bucket — sign them for signed-in staff only,
+    // and only when the stored value really is one of our objects.
+    const signed = await signPhotos(
+      supabase,
+      list.map((r) => babyPhotoObjectPath(r.baby_photo_url as string | null)),
+    )
     roster = list.map((r) => {
       const m = memberMap.get(r.member_id)
       return {
@@ -59,7 +63,10 @@ export async function GET(request: Request) {
         attendedAt: r.attended_at,
         category: r.category,
         isCore: r.is_core === true,
-        babyPhotoUrl: r.baby_photo_url ? (signed.get(r.baby_photo_url) ?? null) : null,
+        babyPhotoUrl: (() => {
+          const path = babyPhotoObjectPath(r.baby_photo_url as string | null)
+          return path ? (signed.get(path) ?? null) : null
+        })(),
         hasGuardian: !!r.guardian_name,
       }
     })

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/admin-auth"
 import { createRouteHandlerClient } from "@/lib/supabase-server"
-import { signPhotos, PHOTO_EXPORT_TTL_SECONDS } from "@/lib/photos"
+import { signPhotos, babyPhotoObjectPath, PHOTO_EXPORT_TTL_SECONDS } from "@/lib/photos"
 import { buildRetreatCsv, exportFilename, type RetreatExportRow } from "@/lib/retreat-export"
 import type { RetreatCategory } from "@/lib/types"
 
@@ -81,13 +81,16 @@ export async function GET(request: Request) {
     // column is simply blank — the file column still names it.
     const signed = await signPhotos(
       supabase,
-      attendanceRows.map((a) => a.baby_photo_url),
+      attendanceRows.map((a) => babyPhotoObjectPath(a.baby_photo_url as string | null)),
       PHOTO_EXPORT_TTL_SECONDS,
     )
 
     rows = attendanceRows.map((a) => {
       const m = memberMap.get(a.member_id)
       const photo = (a.baby_photo_url as string | null) ?? null
+      // The File column still names whatever is stored, so a bad value is
+      // visible; only the LINK column is withheld for a non-object value.
+      const photoPath = babyPhotoObjectPath(photo)
       return {
         firstName: m?.first_name ?? "Unknown",
         lastName: m?.last_name ?? "",
@@ -104,7 +107,7 @@ export async function GET(request: Request) {
         guardianName: (a.guardian_name as string | null) ?? null,
         guardianContact: (a.guardian_contact as string | null) ?? null,
         babyPhotoFile: photo,
-        babyPhotoLink: photo ? (signed.get(photo) ?? null) : null,
+        babyPhotoLink: photoPath ? (signed.get(photoPath) ?? null) : null,
         registeredAt: a.checked_in_at as string | null,
         attendedAt: (a.attended_at as string | null) ?? null,
       }

@@ -7,6 +7,7 @@ import { POST as uploadPOST } from "@/app/api/photos/upload/route"
 import { __resetRateLimit } from "@/lib/rate-limit"
 import {
   toStoredPhotoValue,
+  toUploadedPhotoPath,
   isLegacyAbsoluteUrl,
   generatePhotoPath,
   signPhoto,
@@ -89,6 +90,51 @@ describe("toStoredPhotoValue — never persist a signed URL", () => {
 
   it("handles null", () => {
     expect(toStoredPhotoValue(null)).toBeNull()
+  })
+})
+
+describe("toUploadedPhotoPath — a public caller can only name a real upload", () => {
+  // attendance.baby_photo_url is written straight from the public retreat form.
+  // toStoredPhotoValue deliberately passes an unrecognised URL through (member
+  // photos really do hold Bubble URLs), which is exactly wrong for this one
+  // column: the value is later rendered as an <img src> on an admin screen and
+  // read server-side while building the photo archive.
+  it("accepts a path our own upload route produced", () => {
+    expect(toUploadedPhotoPath("baby-1786166356633-ej1nor96lw.jpeg")).toBe(
+      "baby-1786166356633-ej1nor96lw.jpeg",
+    )
+    expect(toUploadedPhotoPath("photo-1.webp")).toBe("photo-1.webp")
+  })
+
+  it("collapses one of our own storage URLs back to its path", () => {
+    expect(
+      toUploadedPhotoPath(
+        "https://abc.supabase.co/storage/v1/object/sign/member-photos/baby-123.jpeg?token=xyz",
+      ),
+    ).toBe("baby-123.jpeg")
+  })
+
+  it("rejects an address that would make the server fetch somewhere", () => {
+    expect(toUploadedPhotoPath("http://169.254.169.254/latest/meta-data/")).toBeNull()
+    expect(toUploadedPhotoPath("http://10.0.0.1/")).toBeNull()
+    expect(toUploadedPhotoPath("https://tracker.test/pixel.gif")).toBeNull()
+    expect(toUploadedPhotoPath("https://s3.amazonaws.com/bubble/x.png")).toBeNull()
+  })
+
+  it("rejects anything that could climb out of the bucket", () => {
+    expect(toUploadedPhotoPath("../../etc/passwd")).toBeNull()
+    expect(toUploadedPhotoPath("nested/baby-1.jpeg")).toBeNull()
+    expect(toUploadedPhotoPath("/baby-1.jpeg")).toBeNull()
+  })
+
+  it("rejects junk, blanks and non-strings", () => {
+    expect(toUploadedPhotoPath("")).toBeNull()
+    expect(toUploadedPhotoPath(null)).toBeNull()
+    expect(toUploadedPhotoPath(undefined)).toBeNull()
+    expect(toUploadedPhotoPath(42)).toBeNull()
+    expect(toUploadedPhotoPath({ toString: () => "baby-1.jpeg" })).toBeNull()
+    expect(toUploadedPhotoPath("baby 1.jpeg")).toBeNull()
+    expect(toUploadedPhotoPath("a".repeat(300))).toBeNull()
   })
 })
 

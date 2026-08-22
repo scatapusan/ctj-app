@@ -1,12 +1,24 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { type Event } from "@/lib/types"
 import { DataTable } from "@/components/admin/data-table"
 import { ListSkeleton } from "@/components/admin/list-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { Download, Calendar, Users, ClipboardList, Trash2, Loader2 } from "lucide-react"
+import { RegistrantDetail } from "@/components/admin/registrant-detail"
+import { useRole } from "@/components/admin/role-provider"
+import {
+  Download,
+  Calendar,
+  Users,
+  ClipboardList,
+  Trash2,
+  Loader2,
+  Eye,
+  Image as ImageIcon,
+  FileArchive,
+} from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -20,6 +32,8 @@ interface AttendanceRecord {
   attended_at: string | null
   category: "youth" | "ya" | null
   is_core: boolean
+  /** Whether a baby photo is on file — not the photo itself. */
+  has_baby_photo: boolean
 }
 
 /**
@@ -51,14 +65,49 @@ function CategorySelect({
   )
 }
 
-/** Cancel/remove one registration. Irreversible, so it always confirms first. */
+/**
+ * Opens the full record. The row itself is clickable too, but a real button is
+ * what makes the detail reachable by keyboard and announced by a screen reader.
+ */
+function ViewButton({
+  record,
+  onView,
+}: {
+  record: AttendanceRecord
+  onView: (record: AttendanceRecord) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        onView(record)
+      }}
+      aria-label={`View full details for ${record.member_name}`}
+      title="View full registration details"
+      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+    >
+      <Eye className="size-4" />
+    </button>
+  )
+}
+
+/**
+ * Cancel/remove one registration. Irreversible, so it always confirms first,
+ * and admin-only — the endpoint refuses a core session, so showing the control
+ * to core leaders only ever produced a failure toast.
+ */
 function CancelButton({
   record,
   onCancel,
+  hidden,
 }: {
   record: AttendanceRecord
   onCancel: (record: AttendanceRecord) => void
+  /** Role not resolved yet: hold the space, don't let the row jump. */
+  hidden?: boolean
 }) {
+  if (hidden) return <span className="inline-block size-7" aria-hidden="true" />
   return (
     <button
       type="button"
@@ -87,6 +136,17 @@ function StatusBadge({ status }: { status: AttendanceRecord["status"] }) {
   )
 }
 
+/** Marks the rows whose registrant uploaded a baby photo. */
+function PhotoMark({ record }: { record: AttendanceRecord }) {
+  if (!record.has_baby_photo) return null
+  return (
+    <ImageIcon
+      className="size-3.5 shrink-0 text-muted-foreground"
+      aria-label="Baby photo on file"
+    />
+  )
+}
+
 export default function AttendancePage() {
   const [events, setEvents] = useState<Event[]>([])
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
@@ -94,6 +154,15 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true)
   const [recordsLoading, setRecordsLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [downloadingPhotos, setDownloadingPhotos] = useState(false)
+  const [detailId, setDetailId] = useState<string | null>(null)
+  /** The event whose records the newest in-flight request is for. */
+  const latestRequest = useRef<string | null>(null)
+  // `loading` matters here: the provider starts every session as a non-admin
+  // while /api/admin/me is in flight, so gating on isSuperadmin alone makes the
+  // cancel control vanish and reappear for a real admin. The slot is held open
+  // instead of collapsing the row.
+  const { isSuperadmin, loading: roleLoading } = useRole()
 
   useEffect(() => {
     async function load() {
@@ -115,24 +184,41 @@ export default function AttendancePage() {
   async function selectEvent(eventId: string) {
     setSelectedEventId(eventId)
     setRecordsLoading(true)
+    setDetailId(null)
+    // Tapping two events quickly used to be decided by whichever response
+    // landed last. Every write below is gated on this still being the
+    // selection, so a slow first response can no longer replace a fast second.
+    latestRequest.current = eventId
 
     try {
       const res = await fetch(`/api/admin/attendance?eventId=${encodeURIComponent(eventId)}`)
+      if (latestRequest.current !== eventId) return
       if (res.ok) {
         const data = await res.json()
         setRecords(data.records as AttendanceRecord[])
       } else {
         setRecords([])
+        // An empty table otherwise reads as "nobody registered", which on the
+        // day of the retreat is the most alarming possible way to say "your
+        // session expired".
+        toast.error(
+          res.status === 403
+            ? "Your session has expired. Please sign in again."
+            : "Couldn't load this event's registrations. Please try again.",
+        )
       }
     } catch {
+      if (latestRequest.current !== eventId) return
       setRecords([])
+      toast.error("Network error loading this event's registrations.")
     } finally {
-      setRecordsLoading(false)
+      if (latestRequest.current === eventId) setRecordsLoading(false)
     }
   }
 
   async function changeCategory(id: string, value: "youth" | "ya" | "core") {
     const previous = records
+    const forEvent = selectedEventId
     // Optimistic: Core keeps the stored bracket, Youth/YA clears the label.
     setRecords((rs) =>
       rs.map((r) =>
@@ -148,7 +234,9 @@ export default function AttendancePage() {
       if (!res.ok) throw new Error()
       toast.success("Category updated")
     } catch {
-      setRecords(previous)
+      // Only roll back if we are still looking at the same event — otherwise
+      // this would restore the previous event's rows over the current list.
+      if (latestRequest.current === forEvent) setRecords(previous)
       toast.error("Couldn't update the category. Please try again.")
     }
   }
@@ -163,7 +251,9 @@ export default function AttendancePage() {
     if (!ok) return
 
     const previous = records
+    const forEvent = selectedEventId
     setRecords((rs) => rs.filter((r) => r.id !== record.id))
+    if (detailId === record.id) setDetailId(null)
     try {
       const res = await fetch(`/api/admin/attendance?id=${encodeURIComponent(record.id)}`, {
         method: "DELETE",
@@ -171,10 +261,13 @@ export default function AttendancePage() {
       if (!res.ok) throw new Error()
       toast.success(`${record.member_name} removed from this event`)
     } catch {
-      setRecords(previous)
+      if (latestRequest.current === forEvent) setRecords(previous)
       toast.error("Couldn't cancel that registration. Please try again.")
     }
   }
+
+  /** How many of this event's registrants uploaded a baby photo. */
+  const photoCount = useMemo(() => records.filter((r) => r.has_baby_photo).length, [records])
 
   /**
    * The CSV is built server-side: it carries every registration answer —
@@ -197,7 +290,7 @@ export default function AttendancePage() {
         )
         return
       }
-
+      // Small enough to buffer, unlike the photo archive below.
       const blob = await res.blob()
       const filename =
         res.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1] ??
@@ -215,7 +308,54 @@ export default function AttendancePage() {
     }
   }
 
+  /**
+   * Every baby photo for this event in one zip, each file named after the
+   * person in it. Built and streamed by the server — the photos live in a
+   * private bucket, so the browser never gets a downloadable link to them.
+   *
+   * Unlike the CSV, this is NOT fetched into a blob first. The archive can run
+   * to tens of megabytes, and buffering it would hold the whole thing in a
+   * phone's memory before writing a byte to disk. Navigating to the URL lets
+   * the browser stream it straight to the downloads folder with its own
+   * progress UI. The cost is that a failure response would render as raw JSON
+   * where a file was expected, so the probe below asks the same route the same
+   * question first and turns any refusal into a toast.
+   */
+  async function downloadPhotos() {
+    if (!selectedEventId || photoCount === 0) return
+    const url = `/api/admin/attendance/photos?eventId=${encodeURIComponent(selectedEventId)}`
+    setDownloadingPhotos(true)
+    try {
+      const probe = await fetch(`${url}&probe=1`)
+      if (!probe.ok) {
+        toast.error(
+          probe.status === 403
+            ? "Your session has expired. Please sign in again."
+            : probe.status === 404
+              ? "No baby photos have been uploaded for this event yet."
+              : "Couldn't build the photo download. Please try again.",
+        )
+        return
+      }
+
+      const { count } = (await probe.json()) as { count: number }
+      const link = document.createElement("a")
+      link.href = url
+      link.rel = "noopener"
+      link.click()
+      toast.success(
+        `Downloading ${count} photo${count === 1 ? "" : "s"} — check your downloads.`,
+      )
+    } catch {
+      toast.error("Network error starting the photo download. Please try again.")
+    } finally {
+      setDownloadingPhotos(false)
+    }
+  }
+
   const selectedEvent = events.find((e) => e.id === selectedEventId)
+  const closeDetail = useCallback(() => setDetailId(null), [])
+  const openDetail = useCallback((record: AttendanceRecord) => setDetailId(record.id), [])
 
   if (loading) {
     return <ListSkeleton rows={5} showSearch={false} />
@@ -285,16 +425,43 @@ export default function AttendancePage() {
             </div>
             {records.length > 0 && (
               <div className="flex flex-col items-end gap-1">
-                <Button variant="outline" size="sm" onClick={exportCsv} disabled={exporting}>
-                  {exporting ? (
-                    <Loader2 className="size-4 mr-2 animate-spin" />
-                  ) : (
-                    <Download className="size-4 mr-2" />
-                  )}
-                  Export CSV
-                </Button>
-                <p className="text-[11px] text-muted-foreground">
-                  Includes birthday, address, contact and guardian details.
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={exportCsv} disabled={exporting}>
+                    {exporting ? (
+                      <Loader2 className="size-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="size-4 mr-2" />
+                    )}
+                    Export CSV
+                  </Button>
+                  {/* The title sits on the wrapper: a disabled button swallows
+                      pointer events, so its own tooltip never appears. */}
+                  <span
+                    title={
+                      photoCount === 0
+                        ? "Nobody has uploaded a baby photo for this event yet"
+                        : "Download every baby photo, each file named after the person"
+                    }
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={downloadPhotos}
+                      disabled={downloadingPhotos || photoCount === 0}
+                    >
+                      {downloadingPhotos ? (
+                        <Loader2 className="size-4 mr-2 animate-spin" />
+                      ) : (
+                        <FileArchive className="size-4 mr-2" />
+                      )}
+                      Baby photos ({photoCount})
+                    </Button>
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground text-right max-w-sm">
+                  CSV includes birthday, address, contact, guardian details and photo links that
+                  stay live for a week. Photos download as a zip, each file named after the person
+                  &mdash; &ldquo;Juan Dela Cruz.jpg&rdquo;.
                 </p>
               </div>
             )}
@@ -312,8 +479,22 @@ export default function AttendancePage() {
           ) : (
             <DataTable
               data={records as unknown as Record<string, unknown>[]}
+              onRowClick={(item) => openDetail(item as unknown as AttendanceRecord)}
               columns={[
-                { key: "member_name", label: "Name", sortable: true },
+                {
+                  key: "member_name",
+                  label: "Name",
+                  sortable: true,
+                  render: (item) => {
+                    const r = item as unknown as AttendanceRecord
+                    return (
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate">{r.member_name}</span>
+                        <PhotoMark record={r} />
+                      </span>
+                    )
+                  },
+                },
                 { key: "email", label: "Email", sortable: true },
                 {
                   key: "category",
@@ -348,14 +529,23 @@ export default function AttendancePage() {
                   },
                 },
                 {
-                  key: "cancel",
+                  key: "actions",
                   label: "",
-                  render: (item) => (
-                    <CancelButton
-                      record={item as unknown as AttendanceRecord}
-                      onCancel={cancelRegistration}
-                    />
-                  ),
+                  render: (item) => {
+                    const r = item as unknown as AttendanceRecord
+                    return (
+                      <span className="flex items-center gap-1 justify-end">
+                        <ViewButton record={r} onView={openDetail} />
+                        {(isSuperadmin || roleLoading) && (
+                          <CancelButton
+                            record={r}
+                            onCancel={cancelRegistration}
+                            hidden={roleLoading}
+                          />
+                        )}
+                      </span>
+                    )
+                  },
                 },
               ]}
               searchKeys={["member_name", "email"]}
@@ -366,13 +556,23 @@ export default function AttendancePage() {
                 return (
                   <div className="glass rounded-xl p-3 flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground truncate">{r.member_name}</p>
+                      <p className="font-medium text-foreground truncate flex items-center gap-1.5">
+                        <span className="truncate">{r.member_name}</span>
+                        <PhotoMark record={r} />
+                      </p>
                       <p className="text-xs text-muted-foreground truncate">{r.email}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <div className="flex items-center gap-1">
                         <CategorySelect record={r} onChange={changeCategory} />
-                        <CancelButton record={r} onCancel={cancelRegistration} />
+                        <ViewButton record={r} onView={openDetail} />
+                        {(isSuperadmin || roleLoading) && (
+                          <CancelButton
+                            record={r}
+                            onCancel={cancelRegistration}
+                            hidden={roleLoading}
+                          />
+                        )}
                       </div>
                       <StatusBadge status={r.status} />
                       <span className="text-xs text-accent/80 font-medium">
@@ -384,8 +584,17 @@ export default function AttendancePage() {
               }}
             />
           )}
+
+          {records.length > 0 && (
+            <p className="text-[11px] text-muted-foreground">
+              Open a registrant to see their birthday, age, address, contact number, guardian details
+              and baby photo.
+            </p>
+          )}
         </div>
       )}
+
+      <RegistrantDetail attendanceId={detailId} onClose={closeDetail} />
     </div>
   )
 }

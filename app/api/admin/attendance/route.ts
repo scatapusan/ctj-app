@@ -4,6 +4,12 @@ import { createRouteHandlerClient } from "@/lib/supabase-server"
 import { PHOTO_BUCKET, isLegacyAbsoluteUrl } from "@/lib/photos"
 
 // Attendance records for one event (enriched with member name/email). Admin or core.
+//
+// Deliberately thin: name, email, category, status and whether a baby photo
+// exists. The addresses, contact numbers and guardian details stay out of this
+// list — they are fetched one registrant at a time by
+// /api/admin/attendance/[id], so a whole event's PII is never sitting in the
+// attendance table's client-side state.
 export async function GET(request: Request) {
   const guard = requireRole("admin", "core")
   if (!guard.ok) return guard.response
@@ -14,7 +20,7 @@ export async function GET(request: Request) {
   const supabase = createRouteHandlerClient()
   const { data: attendance, error } = await supabase
     .from("attendance")
-    .select("id, checked_in_at, member_id, status, attended_at, category, is_core")
+    .select("id, checked_in_at, member_id, status, attended_at, category, is_core, baby_photo_url")
     .eq("event_id", eventId)
     .order("checked_in_at", { ascending: true })
 
@@ -32,6 +38,9 @@ export async function GET(request: Request) {
     attended_at: string | null
     category: string | null
     is_core: boolean
+    /** Whether a baby photo is on file. NOT the photo, and not a link to it —
+     *  just enough for the list to show a marker and count the zip download. */
+    has_baby_photo: boolean
   }[] = []
   const rows = attendance ?? []
   if (rows.length > 0) {
@@ -53,6 +62,7 @@ export async function GET(request: Request) {
       attended_at: (a as { attended_at?: string | null }).attended_at ?? null,
       category: (a as { category?: string | null }).category ?? null,
       is_core: (a as { is_core?: boolean }).is_core === true,
+      has_baby_photo: typeof a.baby_photo_url === "string" && a.baby_photo_url.length > 0,
     }))
   }
 
