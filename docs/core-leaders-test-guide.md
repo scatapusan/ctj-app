@@ -109,13 +109,22 @@ bracket; picking Youth or YA clears the Core label.
    desk is recorded as *pre-registered* only — you still have to tap **Mark
    attended** afterwards. Only the admin walk-in button marks attendance in one
    step.
-4. Marking attended is one-way — there is still no "unmark" button, so tap
-   carefully. Cancelling a registration outright is possible from
-   **Admin → Attendance** (trash icon, asks you to confirm), but it is an
-   admin-only control and core leaders will not see the icon at all — ask an
-   admin. It removes someone from this event entirely — their member profile
-   is kept and they can register again — so it is for "they're not coming",
-   not for undoing a mis-tap on someone standing in front of you.
+4. Tapped the wrong person? **Marking attended can now be undone.** Straight
+   after marking, the little message at the bottom of the screen has an
+   **Undo** — tap it. If you notice later, find them in the **Attended** list
+   and tap **Undo** on their row; that one asks you to confirm. Either way they
+   go back to the pre-registered list with their registration, category and
+   photo untouched, and you can mark them attended again.
+
+   One thing it does not undo: a line already written to the Google Sheet. That
+   clears itself the next time an admin runs the full sync from the dashboard.
+
+   Cancelling a registration outright is a different thing, from
+   **Admin → Attendance**: open the person and use *Cancel this registration*
+   at the bottom of their details. It is admin-only, so core leaders will not
+   see it — ask an admin. It removes them from the event entirely (their member
+   profile is kept and they can register again), so it is for "they're not
+   coming", not for undoing a mis-tap on someone standing in front of you.
 5. Need someone's guardian number, address, birthday or baby photo? From
    **Admin → Attendance**, pick the retreat and tap the eye icon on their row
    (or just tap the row). That opens their full registration — everything they
